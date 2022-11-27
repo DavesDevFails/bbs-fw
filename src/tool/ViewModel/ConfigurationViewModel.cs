@@ -214,6 +214,19 @@ namespace BBSFW.ViewModel
 			}
 		}
 
+		public bool UsePretension
+		{
+			get { return _config.UsePretension; }
+			set
+			{
+				if (_config.UsePretension != value)
+				{
+					_config.UsePretension = value;
+					OnPropertyChanged(nameof(UsePretension));
+				}
+			}
+		}
+
 		public uint ThrottleStartVoltageMillivolts
 		{
 			get { return _config.ThrottleStartMillivolts; }
@@ -460,6 +473,7 @@ namespace BBSFW.ViewModel
 			OnPropertyChanged(nameof(UseSpeedSensor));
 			OnPropertyChanged(nameof(UsePushWalk));
 			OnPropertyChanged(nameof(UseTemperatureSensor));
+			OnPropertyChanged(nameof(UsePretension));
 			OnPropertyChanged(nameof(ThrottleStartVoltageMillivolts));
 			OnPropertyChanged(nameof(ThrottleEndVoltageMillivolts));
 			OnPropertyChanged(nameof(ThrottleStartCurrentPercent));

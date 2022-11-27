@@ -54,6 +54,7 @@ typedef struct
 	uint8_t use_speed_sensor;
 	uint8_t use_display;
 	uint8_t use_push_walk;
+	uint8_t use_pretension;
 	uint8_t use_temperature_sensor;
 
 	// speed sensor

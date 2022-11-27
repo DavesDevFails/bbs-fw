@@ -112,7 +112,7 @@ static uint16_t ramp_up_current_interval_ms;
 static uint8_t ramp_down_target_current;
 static uint32_t last_ramp_down_decrement_ms;
 
-
+void apply_pretension(uint8_t* target_current);
 void apply_pas(uint8_t* target_current, uint8_t throttle_percent);
 void apply_cruise(uint8_t* target_current, uint8_t throttle_percent);
 void apply_throttle(uint8_t* target_current, uint8_t throttle_percent);
@@ -164,6 +164,7 @@ void app_process()
 	{
 		uint8_t throttle_percent = throttle_read();
 
+		apply_pretension(&target_current);
 		apply_pas(&target_current, throttle_percent);
 		apply_cruise(&target_current, throttle_percent);
 
@@ -330,6 +331,18 @@ uint8_t app_get_temperature()
 	return (uint8_t)temp_max;
 }
 
+void apply_pretension(uint8_t* target_current)
+{
+	// TODO: 
+	int16_t current_speed_rpm_x10 = speed_sensor_get_rpm_x10();
+	int16_t pretension_cutoff_speed_rpm_x10 = convert_wheel_speed_kph_to_rpm(6) * 10;
+
+	if (g_config.use_speed_sensor && g_config.use_pretension && current_speed_rpm_x10 > pretension_cutoff_speed_rpm_x10)
+	{
+		*target_current = 1;
+	}
+	return;
+}
 
 void apply_pas(uint8_t* target_current, uint8_t throttle_percent)
 {

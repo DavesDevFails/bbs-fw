@@ -162,6 +162,7 @@ static void load_default_config()
 	g_config.use_speed_sensor = 1;
 	g_config.use_display = 1;
 	g_config.use_push_walk = 1;
+	g_config.use_pretension = 0;
 	g_config.use_temperature_sensor = TEMPERATURE_SENSOR_CONTR | TEMPERATURE_SENSOR_MOTOR;
 
 	g_config.wheel_size_inch_x10 = 280;

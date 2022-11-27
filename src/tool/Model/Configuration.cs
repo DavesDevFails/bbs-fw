@@ -94,6 +94,7 @@ namespace BBSFW.Model
 		public bool UseSpeedSensor;
 		public bool UseDisplay;
 		public bool UsePushWalk;
+		public bool UsePretension;
 		public TemperatureSensor UseTemperatureSensor;
 
 		// speed sensor
@@ -135,6 +136,8 @@ namespace BBSFW.Model
 			UsePushWalk = false;
 			UseTemperatureSensor = TemperatureSensor.All;
 
+			UsePretension = false;
+
 			WheelSizeInch = 0;
 			NumWheelSensorSignals = 0;
 			MaxSpeedKph = 0;
@@ -147,6 +150,7 @@ namespace BBSFW.Model
 			ThrottleStartMillivolts = 0;
 			ThrottleEndMillivolts = 0;
 			ThrottleStartPercent = 0;
+
 
 			ShowTemperatureOnPushWalk = false;
 
@@ -218,12 +222,13 @@ namespace BBSFW.Model
 				}
 			}
 
-			// apply sane default settings for non existing options in version
+			// apply same default settings for non existing options in version
 			MaxBatteryVolts = 0f;
 			UseTemperatureSensor = TemperatureSensor.All;
 			ShowTemperatureOnPushWalk = false;
 			PasKeepCurrentPercent = 100;
 			PasKeepCurrentCadenceRpm = 255;
+			UsePretension = false;
 
 			return true;
 		}
@@ -288,9 +293,10 @@ namespace BBSFW.Model
 				}
 			}
 
-			// apply sane default settings for non existing options in version
+			// apply same default settings for non existing options in version
 			PasKeepCurrentPercent = 100;
 			PasKeepCurrentCadenceRpm = 255;
+			UsePretension = false;
 
 			return true;
 		}
@@ -318,6 +324,8 @@ namespace BBSFW.Model
 				UseDisplay = br.ReadBoolean();
 				UsePushWalk = br.ReadBoolean();
 				UseTemperatureSensor = (TemperatureSensor)br.ReadByte();
+
+				UsePretension = br.ReadBoolean();
 
 				WheelSizeInch = br.ReadUInt16() / 10f;
 				NumWheelSensorSignals = br.ReadByte();
@@ -377,6 +385,8 @@ namespace BBSFW.Model
 				bw.Write(UsePushWalk);
 				bw.Write((byte)UseTemperatureSensor);
 
+				bw.Write(UsePretension);
+					
 				bw.Write((UInt16)(WheelSizeInch * 10));
 				bw.Write((byte)NumWheelSensorSignals);
 
@@ -426,6 +436,7 @@ namespace BBSFW.Model
 			UseSpeedSensor = cfg.UseSpeedSensor;
 			UseDisplay = cfg.UseDisplay;
 			UsePushWalk = cfg.UsePushWalk;
+			UsePretension = cfg.UsePretension;
 			UseTemperatureSensor = cfg.UseTemperatureSensor;
 			WheelSizeInch = cfg.WheelSizeInch;
 			NumWheelSensorSignals = cfg.NumWheelSensorSignals;
