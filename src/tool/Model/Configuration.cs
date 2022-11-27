@@ -16,7 +16,7 @@ namespace BBSFW.Model
 
 		public const int ByteSizeV1 = 120;
 		public const int ByteSizeV2 = 124;
-		public const int ByteSizeV3 = 126;
+		public const int ByteSizeV3 = 127;
 
 
 
