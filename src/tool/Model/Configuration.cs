@@ -459,6 +459,8 @@ namespace BBSFW.Model
 				UsePushWalk = br.ReadBoolean();
 				UseTemperatureSensor = (TemperatureSensor)br.ReadByte();
 
+				UsePretension = br.ReadBoolean();
+
 				WheelSizeInch = br.ReadUInt16() / 10f;
 				NumWheelSensorSignals = br.ReadByte();
 
