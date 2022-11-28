@@ -89,6 +89,7 @@ typedef struct
 	uint8_t use_shift_sensor;
 	uint8_t use_push_walk;
 	uint8_t use_pretension;
+	uint8_t pretension_speed_cutoff_kph;
 	uint8_t use_temperature_sensor;
 	uint8_t lights_mode;
 	uint8_t use_pretension;
