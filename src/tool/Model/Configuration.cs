@@ -16,7 +16,7 @@ namespace BBSFW.Model
 
 		public const int ByteSizeV1 = 120;
 		public const int ByteSizeV2 = 124;
-		public const int ByteSizeV3 = 127;
+		public const int ByteSizeV3 = 128;
 
 
 
@@ -95,6 +95,7 @@ namespace BBSFW.Model
 		public bool UseDisplay;
 		public bool UsePushWalk;
 		public bool UsePretension;
+		public uint PretensionSpeedCutoffKph;
 		public TemperatureSensor UseTemperatureSensor;
 
 		// speed sensor
@@ -134,9 +135,10 @@ namespace BBSFW.Model
 			UseSpeedSensor = false;
 			UseDisplay = false;
 			UsePushWalk = false;
+			UsePretension = false;
+			PretensionSpeedCutoffKph = 0;
 			UseTemperatureSensor = TemperatureSensor.All;
 
-			UsePretension = false;
 
 			WheelSizeInch = 0;
 			NumWheelSensorSignals = 0;
@@ -229,6 +231,7 @@ namespace BBSFW.Model
 			PasKeepCurrentPercent = 100;
 			PasKeepCurrentCadenceRpm = 255;
 			UsePretension = false;
+			PretensionSpeedCutoffKph = 0;
 
 			return true;
 		}
@@ -262,8 +265,6 @@ namespace BBSFW.Model
 
 				PasStartDelayPulses = br.ReadByte();
 				PasStopDelayMilliseconds = br.ReadByte() * 10u;
-				PasKeepCurrentCadenceRpm = 255;
-				PasKeepCurrentPercent = 100;
 
 				ThrottleStartMillivolts = br.ReadUInt16();
 				ThrottleEndMillivolts = br.ReadUInt16();
@@ -297,6 +298,7 @@ namespace BBSFW.Model
 			PasKeepCurrentPercent = 100;
 			PasKeepCurrentCadenceRpm = 255;
 			UsePretension = false;
+			PretensionSpeedCutoffKph = 0;
 
 			return true;
 		}
@@ -323,9 +325,9 @@ namespace BBSFW.Model
 				UseSpeedSensor = br.ReadBoolean();
 				UseDisplay = br.ReadBoolean();
 				UsePushWalk = br.ReadBoolean();
-				UseTemperatureSensor = (TemperatureSensor)br.ReadByte();
-
 				UsePretension = br.ReadBoolean();
+				PretensionSpeedCutoffKph = br.ReadByte();
+				UseTemperatureSensor = (TemperatureSensor)br.ReadByte();
 
 				WheelSizeInch = br.ReadUInt16() / 10f;
 				NumWheelSensorSignals = br.ReadByte();
@@ -383,10 +385,10 @@ namespace BBSFW.Model
 				bw.Write(UseSpeedSensor);
 				bw.Write(UseDisplay);
 				bw.Write(UsePushWalk);
+				bw.Write(UsePretension);
+				bw.Write((byte)PretensionSpeedCutoffKph);
 				bw.Write((byte)UseTemperatureSensor);
 
-				bw.Write(UsePretension);
-					
 				bw.Write((UInt16)(WheelSizeInch * 10));
 				bw.Write((byte)NumWheelSensorSignals);
 
@@ -437,6 +439,7 @@ namespace BBSFW.Model
 			UseDisplay = cfg.UseDisplay;
 			UsePushWalk = cfg.UsePushWalk;
 			UsePretension = cfg.UsePretension;
+			PretensionSpeedCutoffKph = cfg.PretensionSpeedCutoffKph;
 			UseTemperatureSensor = cfg.UseTemperatureSensor;
 			WheelSizeInch = cfg.WheelSizeInch;
 			NumWheelSensorSignals = cfg.NumWheelSensorSignals;
@@ -503,6 +506,7 @@ namespace BBSFW.Model
 			ValidateLimits((uint)WheelSizeInch, 10, 40, "Wheel Size (inch)");
 			ValidateLimits(NumWheelSensorSignals, 1, 10, "Wheel Sensor Signals");
 			ValidateLimits(MaxSpeedKph, 0, 100, "Max Speed (km/h)");
+			ValidateLimits(PretensionSpeedCutoffKph, 0, 100, "Pretension Speed Cutoff (km/h)");
 
 			ValidateLimits(PasStartDelayPulses, 0, 24, "Pas Delay (pulses)");
 			ValidateLimits(PasStopDelayMilliseconds, 50, 1000, "Pas Stop Delay (ms)");

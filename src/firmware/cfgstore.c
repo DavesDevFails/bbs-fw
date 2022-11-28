@@ -13,10 +13,8 @@
 
 #include <string.h>
 
-
 #define EEPROM_CONFIG_PAGE		0
 #define EEPROM_PSTATE_PAGE		1
-
 
 #define EEPROM_OK					0
 #define EEPROM_ERROR_SELECT_PAGE	1
@@ -27,8 +25,6 @@
 #define EEPROM_ERROR_ERASE			6
 #define EEPROM_ERROR_WRITE			7
 
-
-
 static const uint8_t default_current_limits[] = { 7, 15, 23, 31, 43, 55, 67, 79, 91 };
 
 typedef struct
@@ -38,12 +34,10 @@ typedef struct
 	uint8_t checksum;
 } header_t;
 
-
 static header_t header;
 
 config_t g_config;
 pstate_t g_pstate;
-
 
 static uint8_t read(uint8_t page, uint8_t version, uint8_t* dst, uint8_t size);
 static uint8_t write(uint8_t page, uint8_t version, uint8_t* src, uint8_t size);
@@ -163,6 +157,7 @@ static void load_default_config()
 	g_config.use_display = 1;
 	g_config.use_push_walk = 1;
 	g_config.use_pretension = 0;
+	g_config.pretension_speed_cutoff_kph = 8;
 	g_config.use_temperature_sensor = TEMPERATURE_SENSOR_CONTR | TEMPERATURE_SENSOR_MOTOR;
 
 	g_config.wheel_size_inch_x10 = 280;
@@ -194,7 +189,6 @@ static void load_default_config()
 		g_config.assist_levels[0][i+1].max_throttle_current_percent = 100;
 	}
 }
-
 
 static bool read_pstate()
 {
@@ -247,8 +241,6 @@ static void load_default_pstate()
 {
 	g_pstate.adc_voltage_calibration_steps_x100 = 0;
 }
-
-
 
 static uint8_t read(uint8_t page, uint8_t version, uint8_t* dst, uint8_t size)
 {
