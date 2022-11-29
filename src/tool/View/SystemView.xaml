@@ -184,7 +184,7 @@
 				<TextBlock.ToolTip>
 					<TextBlock Width="300" TextWrapping="Wrap">
 						Pretension will not be applied at and below this roadspeed. Take caution setting this to zero, as
-						your bike will most likely roll forward as soon as it is powered on. Recommended to set to ~8kph.
+						your bike will roll forward as soon as it is powered on and pushed. Recommended to set to ~8kph.
 					</TextBlock>
 				</TextBlock.ToolTip>
 			</TextBlock>
@@ -194,7 +194,7 @@
 				<TextBlock.ToolTip>
 					<TextBlock Width="300" TextWrapping="Wrap">
 						Pretension will not be applied at and below this roadspeed. Take caution setting this to zero, as
-						your bike will most likely roll forward as soon as it is powered on. Recommended to set to ~5mph.
+						your bike will roll forward as soon as it is powered on and pushed. Recommended to set to ~5mph.
 					</TextBlock>
 				</TextBlock.ToolTip>
 			</TextBlock>
