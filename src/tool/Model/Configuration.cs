@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
@@ -7,7 +8,7 @@ using System.Xml.Serialization;
 namespace BBSFW.Model
 {
 
-	[XmlRoot("BBSFW", Namespace ="https://github.com/danielnilsson9/bbshd-fw")]
+	[XmlRoot("BBSFW", Namespace ="https://github.com/danielnilsson9/bbs-fw")]
 	public class Configuration
 	{
 		public const int CurrentVersion = 3;
@@ -16,10 +17,17 @@ namespace BBSFW.Model
 
 		public const int ByteSizeV1 = 120;
 		public const int ByteSizeV2 = 124;
-		public const int ByteSizeV3 = 128;
+		public const int ByteSizeV3 = 152;
 
+		public enum Feature
+		{
+			ShiftSensor,
+			TorqueSensor,
+			ControllerTemperatureSensor,
+			MotorTemperatureSensor
+		}
 
-
+		
 		public static int GetByteSize(int version)
 		{
 			switch (version)
@@ -43,14 +51,16 @@ namespace BBSFW.Model
 			Pas0AndLights = 3
 		}
 
-		public enum AssistType
+		[Flags]
+		public enum AssistFlagsType : byte
 		{
-			Disabled = 0x00,
+			None = 0x00,
 			Pas = 0x01,
 			Throttle = 0x02,
-			PasAndThrottle = 0x03,
-			VariablePas = 0x09,
-			Cruise = 0x04
+			Cruise = 0x04,
+
+			PasVariable = 0x08,
+			PasTorque = 0x10
 		};
 
 		public enum TemperatureSensor
@@ -64,7 +74,7 @@ namespace BBSFW.Model
 		public class AssistLevel
 		{
 			[XmlAttribute]
-			public AssistType Type;
+			public AssistFlagsType Type;
 
 			[XmlAttribute]
 			public uint MaxCurrentPercent;
@@ -77,6 +87,31 @@ namespace BBSFW.Model
 
 			[XmlAttribute]
 			public uint MaxSpeedPercent;
+
+			[XmlAttribute]
+			public float TorqueAmplificationFactor;
+		}
+
+
+		[XmlIgnore]
+		public BbsfwConnection.Controller Target { get; private set; }
+
+		public uint MaxCurrentLimitAmps
+		{
+			get
+			{
+				switch (Target)
+				{
+					case BbsfwConnection.Controller.BBSHD:
+						return 33;
+					case BbsfwConnection.Controller.BBS02:
+						return 30;
+					case BbsfwConnection.Controller.TSDZ2:
+						return 20;
+				}
+
+				return 50;
+			}
 		}
 
 		// hmi
@@ -91,8 +126,9 @@ namespace BBSFW.Model
 		public uint MaxSpeedKph;
 
 		// externals
-		public bool UseSpeedSensor;
 		public bool UseDisplay;
+		public bool UseSpeedSensor;
+		public bool UseShiftSensor;
 		public bool UsePushWalk;
 		public bool UsePretension;
 		public uint PretensionSpeedCutoffKph;
@@ -113,6 +149,10 @@ namespace BBSFW.Model
 		public uint ThrottleEndMillivolts;
 		public uint ThrottleStartPercent;
 
+		// shift interrupt options
+		public uint ShiftInterruptDuration;
+		public uint ShiftInterruptCurrentThresholdPercent;
+
 		// misc
 		public bool ShowTemperatureOnPushWalk;
 
@@ -124,16 +164,22 @@ namespace BBSFW.Model
 		public AssistLevel[] SportAssistLevels = new AssistLevel[10];
 
 
-		public Configuration()
+		public Configuration() : this(BbsfwConnection.Controller.Unknown)
+		{ }
+
+		public Configuration(BbsfwConnection.Controller target)
 		{
+			Target = target;
+
 			UseFreedomUnits = Properties.Settings.Default.UseFreedomUnits;
 			MaxCurrentAmps = 0;
 			CurrentRampAmpsSecond = 0;
 			MaxBatteryVolts = 0;
 			LowCutoffVolts = 0;
 
-			UseSpeedSensor = false;
 			UseDisplay = false;
+			UseSpeedSensor = false;
+			UseShiftSensor = false;
 			UsePushWalk = false;
 			UsePretension = false;
 			PretensionSpeedCutoffKph = 0;
@@ -153,6 +199,8 @@ namespace BBSFW.Model
 			ThrottleEndMillivolts = 0;
 			ThrottleStartPercent = 0;
 
+			ShiftInterruptDuration = 0;
+			ShiftInterruptCurrentThresholdPercent = 0;
 
 			ShowTemperatureOnPushWalk = false;
 
@@ -168,6 +216,28 @@ namespace BBSFW.Model
 			{
 				SportAssistLevels[i] = new AssistLevel();
 			}
+		}
+
+		public bool IsFeatureSupported(Feature feature)
+		{
+			if (Target == BbsfwConnection.Controller.Unknown)
+			{
+				return true;
+			}
+
+			switch (feature)
+			{
+				case Feature.ShiftSensor:
+					return new[] { BbsfwConnection.Controller.BBSHD, BbsfwConnection.Controller.BBS02 }.Contains(Target);
+				case Feature.TorqueSensor:
+					return new[] { BbsfwConnection.Controller.TSDZ2 }.Contains(Target);
+				case Feature.ControllerTemperatureSensor:
+					return new[] { BbsfwConnection.Controller.BBSHD, BbsfwConnection.Controller.BBS02 }.Contains(Target);
+				case Feature.MotorTemperatureSensor:
+					return new[] { BbsfwConnection.Controller.BBSHD }.Contains(Target);
+			}
+
+			return false;
 		}
 
 		public bool ParseFromBufferV1(byte[] buffer)
@@ -205,18 +275,18 @@ namespace BBSFW.Model
 				AssistModeSelection = (AssistModeSelect)br.ReadByte();
 				AssistStartupLevel = br.ReadByte();
 
-				for (int i = 0; i < 10; ++i)
+				for (int i = 0; i < StandardAssistLevels.Length; ++i)
 				{
-					StandardAssistLevels[i].Type = (AssistType)br.ReadByte();
+					StandardAssistLevels[i].Type = (AssistFlagsType)br.ReadByte();
 					StandardAssistLevels[i].MaxCurrentPercent = br.ReadByte();
 					StandardAssistLevels[i].MaxThrottlePercent = br.ReadByte();
 					StandardAssistLevels[i].MaxCadencePercent = br.ReadByte();
 					StandardAssistLevels[i].MaxSpeedPercent = br.ReadByte();
 				}
 
-				for (int i = 0; i < 10; ++i)
+				for (int i = 0; i < SportAssistLevels.Length; ++i)
 				{
-					SportAssistLevels[i].Type = (AssistType)br.ReadByte();
+					SportAssistLevels[i].Type = (AssistFlagsType)br.ReadByte();
 					SportAssistLevels[i].MaxCurrentPercent = br.ReadByte();
 					SportAssistLevels[i].MaxThrottlePercent = br.ReadByte();
 					SportAssistLevels[i].MaxCadencePercent = br.ReadByte();
@@ -231,7 +301,10 @@ namespace BBSFW.Model
 			PasKeepCurrentPercent = 100;
 			PasKeepCurrentCadenceRpm = 255;
 			UsePretension = false;
-			PretensionSpeedCutoffKph = 0;
+			PretensionSpeedCutoffKph = 8;
+			UseShiftSensor = true;
+			ShiftInterruptDuration = 600;
+			ShiftInterruptCurrentThresholdPercent = 10;
 
 			return true;
 		}
@@ -275,18 +348,18 @@ namespace BBSFW.Model
 				AssistModeSelection = (AssistModeSelect)br.ReadByte();
 				AssistStartupLevel = br.ReadByte();
 
-				for (int i = 0; i < 10; ++i)
+				for (int i = 0; i < StandardAssistLevels.Length; ++i)
 				{
-					StandardAssistLevels[i].Type = (AssistType)br.ReadByte();
+					StandardAssistLevels[i].Type = (AssistFlagsType)br.ReadByte();
 					StandardAssistLevels[i].MaxCurrentPercent = br.ReadByte();
 					StandardAssistLevels[i].MaxThrottlePercent = br.ReadByte();
 					StandardAssistLevels[i].MaxCadencePercent = br.ReadByte();
 					StandardAssistLevels[i].MaxSpeedPercent = br.ReadByte();
 				}
 
-				for (int i = 0; i < 10; ++i)
+				for (int i = 0; i < SportAssistLevels.Length; ++i)
 				{
-					SportAssistLevels[i].Type = (AssistType)br.ReadByte();
+					SportAssistLevels[i].Type = (AssistFlagsType)br.ReadByte();
 					SportAssistLevels[i].MaxCurrentPercent = br.ReadByte();
 					SportAssistLevels[i].MaxThrottlePercent = br.ReadByte();
 					SportAssistLevels[i].MaxCadencePercent = br.ReadByte();
@@ -298,7 +371,10 @@ namespace BBSFW.Model
 			PasKeepCurrentPercent = 100;
 			PasKeepCurrentCadenceRpm = 255;
 			UsePretension = false;
-			PretensionSpeedCutoffKph = 0;
+			PretensionSpeedCutoffKph = 8;
+			UseShiftSensor = true;
+			ShiftInterruptDuration = 600;
+			ShiftInterruptCurrentThresholdPercent = 10;
 
 			return true;
 		}
@@ -322,8 +398,9 @@ namespace BBSFW.Model
 				LowCutoffVolts = br.ReadByte();
 				MaxSpeedKph = br.ReadByte();
 
-				UseSpeedSensor = br.ReadBoolean();
 				UseDisplay = br.ReadBoolean();
+				UseSpeedSensor = br.ReadBoolean();
+				UseShiftSensor = br.ReadBoolean();
 				UsePushWalk = br.ReadBoolean();
 				UsePretension = br.ReadBoolean();
 				PretensionSpeedCutoffKph = br.ReadByte();
@@ -341,27 +418,32 @@ namespace BBSFW.Model
 				ThrottleEndMillivolts = br.ReadUInt16();
 				ThrottleStartPercent = br.ReadByte();
 
+				ShiftInterruptDuration = br.ReadUInt16();
+				ShiftInterruptCurrentThresholdPercent = br.ReadByte();
+
 				ShowTemperatureOnPushWalk = br.ReadBoolean();
 
 				AssistModeSelection = (AssistModeSelect)br.ReadByte();
 				AssistStartupLevel = br.ReadByte();
 
-				for (int i = 0; i < 10; ++i)
+				for (int i = 0; i < StandardAssistLevels.Length; ++i)
 				{
-					StandardAssistLevels[i].Type = (AssistType)br.ReadByte();
+					StandardAssistLevels[i].Type = (AssistFlagsType)br.ReadByte();
 					StandardAssistLevels[i].MaxCurrentPercent = br.ReadByte();
 					StandardAssistLevels[i].MaxThrottlePercent = br.ReadByte();
 					StandardAssistLevels[i].MaxCadencePercent = br.ReadByte();
 					StandardAssistLevels[i].MaxSpeedPercent = br.ReadByte();
+					StandardAssistLevels[i].TorqueAmplificationFactor = br.ReadByte() / 10f;
 				}
 
-				for (int i = 0; i < 10; ++i)
+				for (int i = 0; i < SportAssistLevels.Length; ++i)
 				{
-					SportAssistLevels[i].Type = (AssistType)br.ReadByte();
+					SportAssistLevels[i].Type = (AssistFlagsType)br.ReadByte();
 					SportAssistLevels[i].MaxCurrentPercent = br.ReadByte();
 					SportAssistLevels[i].MaxThrottlePercent = br.ReadByte();
 					SportAssistLevels[i].MaxCadencePercent = br.ReadByte();
 					SportAssistLevels[i].MaxSpeedPercent = br.ReadByte();
+					SportAssistLevels[i].TorqueAmplificationFactor = br.ReadByte() / 10f;
 				}
 			}
 
@@ -382,8 +464,9 @@ namespace BBSFW.Model
 				bw.Write((byte)LowCutoffVolts);
 				bw.Write((byte)MaxSpeedKph);
 
-				bw.Write(UseSpeedSensor);
 				bw.Write(UseDisplay);
+				bw.Write(UseSpeedSensor);
+				bw.Write(UseShiftSensor);
 				bw.Write(UsePushWalk);
 				bw.Write(UsePretension);
 				bw.Write((byte)PretensionSpeedCutoffKph);
@@ -401,27 +484,32 @@ namespace BBSFW.Model
 				bw.Write((UInt16)ThrottleEndMillivolts);
 				bw.Write((byte)ThrottleStartPercent);
 
+				bw.Write((UInt16)ShiftInterruptDuration);
+				bw.Write((byte)ShiftInterruptCurrentThresholdPercent);
+
 				bw.Write(ShowTemperatureOnPushWalk);
 
 				bw.Write((byte)AssistModeSelection);
 				bw.Write((byte)AssistStartupLevel);
 
-				for (int i = 0; i < 10; ++i)
+				for (int i = 0; i < StandardAssistLevels.Length; ++i)
 				{
 					bw.Write((byte)StandardAssistLevels[i].Type);
 					bw.Write((byte)StandardAssistLevels[i].MaxCurrentPercent);
 					bw.Write((byte)StandardAssistLevels[i].MaxThrottlePercent);
 					bw.Write((byte)StandardAssistLevels[i].MaxCadencePercent);
 					bw.Write((byte)StandardAssistLevels[i].MaxSpeedPercent);
+					bw.Write((byte)Math.Round(StandardAssistLevels[i].TorqueAmplificationFactor * 10));
 				}
 
-				for (int i = 0; i < 10; ++i)
+				for (int i = 0; i < SportAssistLevels.Length; ++i)
 				{
 					bw.Write((byte)SportAssistLevels[i].Type);
 					bw.Write((byte)SportAssistLevels[i].MaxCurrentPercent);
 					bw.Write((byte)SportAssistLevels[i].MaxThrottlePercent);
 					bw.Write((byte)SportAssistLevels[i].MaxCadencePercent);
 					bw.Write((byte)SportAssistLevels[i].MaxSpeedPercent);
+					bw.Write((byte)Math.Round(SportAssistLevels[i].TorqueAmplificationFactor * 10));
 				}
 
 				return s.ToArray();
@@ -430,13 +518,16 @@ namespace BBSFW.Model
 
 		public void CopyFrom(Configuration cfg)
 		{
+			Target = cfg.Target;
+
 			UseFreedomUnits = cfg.UseFreedomUnits;
 			MaxCurrentAmps = cfg.MaxCurrentAmps;
 			CurrentRampAmpsSecond = cfg.CurrentRampAmpsSecond;
 			MaxBatteryVolts = cfg.MaxBatteryVolts;
 			LowCutoffVolts = cfg.LowCutoffVolts;
-			UseSpeedSensor = cfg.UseSpeedSensor;
 			UseDisplay = cfg.UseDisplay;
+			UseSpeedSensor = cfg.UseSpeedSensor;
+			UseShiftSensor = cfg.UseShiftSensor;
 			UsePushWalk = cfg.UsePushWalk;
 			UsePretension = cfg.UsePretension;
 			PretensionSpeedCutoffKph = cfg.PretensionSpeedCutoffKph;
@@ -451,26 +542,30 @@ namespace BBSFW.Model
 			ThrottleStartMillivolts = cfg.ThrottleStartMillivolts;
 			ThrottleEndMillivolts = cfg.ThrottleEndMillivolts;
 			ThrottleStartPercent = cfg.ThrottleStartPercent;
+			ShiftInterruptDuration = cfg.ShiftInterruptDuration;
+			ShiftInterruptCurrentThresholdPercent = cfg.ShiftInterruptCurrentThresholdPercent;
 			ShowTemperatureOnPushWalk = cfg.ShowTemperatureOnPushWalk;
 			AssistModeSelection = cfg.AssistModeSelection;
 			AssistStartupLevel = cfg.AssistStartupLevel;
 
-			for (int i = 0; i < Math.Min(cfg.StandardAssistLevels.Length, 10); ++i)
+			for (int i = 0; i < Math.Min(cfg.StandardAssistLevels.Length, StandardAssistLevels.Length); ++i)
 			{
 				StandardAssistLevels[i].Type = cfg.StandardAssistLevels[i].Type;
 				StandardAssistLevels[i].MaxCurrentPercent = cfg.StandardAssistLevels[i].MaxCurrentPercent;
 				StandardAssistLevels[i].MaxThrottlePercent = cfg.StandardAssistLevels[i].MaxThrottlePercent;
 				StandardAssistLevels[i].MaxCadencePercent = cfg.StandardAssistLevels[i].MaxCadencePercent;
 				StandardAssistLevels[i].MaxSpeedPercent = cfg.StandardAssistLevels[i].MaxSpeedPercent;
+				StandardAssistLevels[i].TorqueAmplificationFactor = cfg.StandardAssistLevels[i].TorqueAmplificationFactor;
 			}
 
-			for (int i = 0; i < Math.Min(cfg.SportAssistLevels.Length, 10); ++i)
+			for (int i = 0; i < Math.Min(cfg.SportAssistLevels.Length, SportAssistLevels.Length); ++i)
 			{
 				SportAssistLevels[i].Type = cfg.SportAssistLevels[i].Type;
 				SportAssistLevels[i].MaxCurrentPercent = cfg.SportAssistLevels[i].MaxCurrentPercent;
 				SportAssistLevels[i].MaxThrottlePercent = cfg.SportAssistLevels[i].MaxThrottlePercent;
 				SportAssistLevels[i].MaxCadencePercent = cfg.SportAssistLevels[i].MaxCadencePercent;
 				SportAssistLevels[i].MaxSpeedPercent = cfg.SportAssistLevels[i].MaxSpeedPercent;
+				SportAssistLevels[i].TorqueAmplificationFactor = cfg.SportAssistLevels[i].TorqueAmplificationFactor;
 			}
 		}
 
@@ -495,10 +590,9 @@ namespace BBSFW.Model
 			}
 		}
 
-
 		public void Validate()
 		{
-			ValidateLimits(MaxCurrentAmps, 5, 33, "Max Current (A)");
+			ValidateLimits(MaxCurrentAmps, 5, MaxCurrentLimitAmps, "Max Current (A)");
 			ValidateLimits(CurrentRampAmpsSecond, 1, 255, "Current Ramp (A/s)");
 			ValidateLimits((uint)MaxBatteryVolts, 1, 100, "Max Battery Voltage (V)");
 			ValidateLimits(LowCutoffVolts, 1, 100, "Low Voltage Cut Off (V)");
@@ -517,7 +611,28 @@ namespace BBSFW.Model
 			ValidateLimits(ThrottleEndMillivolts, 2500, 5000, "Throttle End (mV)");
 			ValidateLimits(ThrottleStartPercent, 0, 100, "Throttle Start (%)");
 
+			ValidateLimits(ShiftInterruptDuration, 50, 2000, "Shift Interrupt Duration (ms)");
+			ValidateLimits(ShiftInterruptCurrentThresholdPercent, 0, 100, "Shift Interrupt Current Threshold (%)");
+
 			ValidateLimits(AssistStartupLevel, 0, 9, "Assist Startup Level");
+
+			for (int i = 0; i < StandardAssistLevels.Length; ++i)
+			{
+				ValidateLimits(StandardAssistLevels[i].MaxCurrentPercent, 0, 100, $"Standard (Level {i}): Target Power (%)");
+				ValidateLimits(StandardAssistLevels[i].MaxThrottlePercent, 0, 100, $"Standard (Level {i}): Max Throttle (%)");
+				ValidateLimits(StandardAssistLevels[i].MaxCadencePercent, 0, 100, $"Standard (Level {i}): Max Cadence (%)");
+				ValidateLimits(StandardAssistLevels[i].MaxSpeedPercent, 0, 100, $"Standard (Level {i}): Max Speed (%)");
+				ValidateLimits((uint)StandardAssistLevels[i].TorqueAmplificationFactor, 0, 25, $"Standard (Level {i}): Torque Amplification");
+			}
+
+			for (int i = 0; i < SportAssistLevels.Length; ++i)
+			{
+				ValidateLimits(SportAssistLevels[i].MaxCurrentPercent, 0, 100, $"Sport (Level {i}): Target Power (%)");
+				ValidateLimits(SportAssistLevels[i].MaxThrottlePercent, 0, 100, $"Sport (Level {i}): Max Throttle (%)");
+				ValidateLimits(SportAssistLevels[i].MaxCadencePercent, 0, 100, $"Sport (Level {i}): Max Cadence (%)");
+				ValidateLimits(SportAssistLevels[i].MaxSpeedPercent, 0, 100, $"Sport (Level {i}): Max Speed (%)");
+				ValidateLimits((uint)SportAssistLevels[i].TorqueAmplificationFactor, 0, 25, $"Sport (Level {i}): Torque Amplification");
+			}
 		}
 
 
