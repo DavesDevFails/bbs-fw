@@ -17,7 +17,7 @@ namespace BBSFW.Model
 
 		public const int ByteSizeV1 = 120;
 		public const int ByteSizeV2 = 124;
-		public const int ByteSizeV3 = 152;
+		public const int ByteSizeV3 = 151;
 
 		public enum Feature
 		{
@@ -126,7 +126,6 @@ namespace BBSFW.Model
 		public uint MaxSpeedKph;
 
 		// externals
-		public bool UseDisplay;
 		public bool UseSpeedSensor;
 		public bool UseShiftSensor;
 		public bool UsePushWalk;
@@ -177,7 +176,6 @@ namespace BBSFW.Model
 			MaxBatteryVolts = 0;
 			LowCutoffVolts = 0;
 
-			UseDisplay = false;
 			UseSpeedSensor = false;
 			UseShiftSensor = false;
 			UsePushWalk = false;
@@ -259,7 +257,7 @@ namespace BBSFW.Model
 				MaxSpeedKph = br.ReadByte();
 
 				UseSpeedSensor = br.ReadBoolean();
-				UseDisplay = br.ReadBoolean();
+				/* UseDisplay = */ br.ReadBoolean();
 				UsePushWalk = br.ReadBoolean();
 
 				WheelSizeInch = br.ReadUInt16() / 10f;
@@ -329,7 +327,7 @@ namespace BBSFW.Model
 				MaxSpeedKph = br.ReadByte();
 
 				UseSpeedSensor = br.ReadBoolean();
-				UseDisplay = br.ReadBoolean();
+				/* UseDisplay = */ br.ReadBoolean();
 				UsePushWalk = br.ReadBoolean();
 				UseTemperatureSensor = (TemperatureSensor)br.ReadByte();
 
@@ -398,7 +396,6 @@ namespace BBSFW.Model
 				LowCutoffVolts = br.ReadByte();
 				MaxSpeedKph = br.ReadByte();
 
-				UseDisplay = br.ReadBoolean();
 				UseSpeedSensor = br.ReadBoolean();
 				UseShiftSensor = br.ReadBoolean();
 				UsePushWalk = br.ReadBoolean();
@@ -464,7 +461,6 @@ namespace BBSFW.Model
 				bw.Write((byte)LowCutoffVolts);
 				bw.Write((byte)MaxSpeedKph);
 
-				bw.Write(UseDisplay);
 				bw.Write(UseSpeedSensor);
 				bw.Write(UseShiftSensor);
 				bw.Write(UsePushWalk);
@@ -525,7 +521,6 @@ namespace BBSFW.Model
 			CurrentRampAmpsSecond = cfg.CurrentRampAmpsSecond;
 			MaxBatteryVolts = cfg.MaxBatteryVolts;
 			LowCutoffVolts = cfg.LowCutoffVolts;
-			UseDisplay = cfg.UseDisplay;
 			UseSpeedSensor = cfg.UseSpeedSensor;
 			UseShiftSensor = cfg.UseShiftSensor;
 			UsePushWalk = cfg.UsePushWalk;
