@@ -72,6 +72,13 @@ namespace BBSFW.Model
 			All = 0x03
 		}
 
+		public enum WalkModeData
+		{
+			Speed = 0,
+			Temperature = 1,
+			RequestedPower = 2
+		}
+
 		public class AssistLevel
 		{
 			[XmlAttribute]
@@ -154,7 +161,7 @@ namespace BBSFW.Model
 		public uint ShiftInterruptCurrentThresholdPercent;
 
 		// misc
-		public bool ShowTemperatureOnPushWalk;
+		public WalkModeData WalkModeDataDisplay;
 
 		// assists options
 		public AssistModeSelect AssistModeSelection;
@@ -201,7 +208,7 @@ namespace BBSFW.Model
 			ShiftInterruptDuration = 0;
 			ShiftInterruptCurrentThresholdPercent = 0;
 
-			ShowTemperatureOnPushWalk = false;
+			WalkModeDataDisplay = WalkModeData.Speed;
 
 			AssistModeSelection = AssistModeSelect.Off;
 			AssistStartupLevel = 0;
@@ -293,10 +300,10 @@ namespace BBSFW.Model
 				}
 			}
 
-			// apply same default settings for non existing options in version
+			// apply default settings for non existing options in version
 			MaxBatteryVolts = 0f;
 			UseTemperatureSensor = TemperatureSensor.All;
-			ShowTemperatureOnPushWalk = false;
+			WalkModeDataDisplay = WalkModeData.Speed;
 			PasKeepCurrentPercent = 100;
 			PasKeepCurrentCadenceRpm = 255;
 			UsePretension = false;
@@ -342,7 +349,7 @@ namespace BBSFW.Model
 				ThrottleEndMillivolts = br.ReadUInt16();
 				ThrottleStartPercent = br.ReadByte();
 
-				ShowTemperatureOnPushWalk = br.ReadBoolean();
+				WalkModeDataDisplay = (WalkModeData)br.ReadByte();
 
 				AssistModeSelection = (AssistModeSelect)br.ReadByte();
 				AssistStartupLevel = br.ReadByte();
@@ -419,7 +426,7 @@ namespace BBSFW.Model
 				ShiftInterruptDuration = br.ReadUInt16();
 				ShiftInterruptCurrentThresholdPercent = br.ReadByte();
 
-				ShowTemperatureOnPushWalk = br.ReadBoolean();
+				WalkModeDataDisplay = (WalkModeData)br.ReadByte();
 
 				AssistModeSelection = (AssistModeSelect)br.ReadByte();
 				AssistStartupLevel = br.ReadByte();
@@ -484,7 +491,7 @@ namespace BBSFW.Model
 				bw.Write((UInt16)ShiftInterruptDuration);
 				bw.Write((byte)ShiftInterruptCurrentThresholdPercent);
 
-				bw.Write(ShowTemperatureOnPushWalk);
+				bw.Write((byte)WalkModeDataDisplay);
 
 				bw.Write((byte)AssistModeSelection);
 				bw.Write((byte)AssistStartupLevel);
@@ -540,7 +547,7 @@ namespace BBSFW.Model
 			ThrottleStartPercent = cfg.ThrottleStartPercent;
 			ShiftInterruptDuration = cfg.ShiftInterruptDuration;
 			ShiftInterruptCurrentThresholdPercent = cfg.ShiftInterruptCurrentThresholdPercent;
-			ShowTemperatureOnPushWalk = cfg.ShowTemperatureOnPushWalk;
+			WalkModeDataDisplay = cfg.WalkModeDataDisplay;
 			AssistModeSelection = cfg.AssistModeSelection;
 			AssistStartupLevel = cfg.AssistStartupLevel;
 
