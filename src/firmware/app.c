@@ -84,6 +84,7 @@ void apply_speed_limit(uint8_t* target_current);
 void apply_thermal_limit(uint8_t* target_current);
 void apply_low_voltage_limit(uint8_t* target_current);
 void apply_shift_sensor_interrupt(uint8_t* target_current);
+void apply_brake(uint8_t* target_current);
 
 void apply_pretension(uint8_t* target_current);
 
@@ -177,6 +178,8 @@ void app_process()
 	apply_shift_sensor_interrupt(&target_current);
 #endif
 
+	apply_brake(&target_current);
+
 	// override target cadence if configured in assist level
 	if (throttle_override &&
 		(assist_level_data.level.flags & ASSIST_FLAG_PAS) &&
@@ -191,7 +194,7 @@ void app_process()
 
 	motor_set_target_current(target_current);
 
-	if (target_current > 0 && !brake_is_activated())
+	if (target_current > 0)
 	{
 		motor_enable();
 	}
@@ -836,6 +839,13 @@ void apply_shift_sensor_interrupt(uint8_t* target_current)
 }
 #endif
 
+void apply_brake(uint8_t* target_current)
+{
+	if (brake_is_activated())
+	{
+		*target_current = 0;
+	}
+}
 
 bool check_power_block()
 {
