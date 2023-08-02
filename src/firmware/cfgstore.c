@@ -166,6 +166,8 @@ static void load_default_config()
 	g_config.pretension_speed_cutoff_kph = 8;
 	g_config.use_temperature_sensor = TEMPERATURE_SENSOR_CONTR | TEMPERATURE_SENSOR_MOTOR;
 
+	g_config.lights_always_on = 0;
+
 	g_config.wheel_size_inch_x10_u16l = (uint8_t)280;
 	g_config.wheel_size_inch_x10_u16h = (uint8_t)(280 >> 8);
 
