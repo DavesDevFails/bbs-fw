@@ -18,7 +18,7 @@ namespace BBSFW.Model
 		public const int ByteSizeV1 = 120;
 		public const int ByteSizeV2 = 124;
 		public const int ByteSizeV3 = 149;
-		public const int ByteSizeV4 = 152;
+		public const int ByteSizeV4 = 154; // should be 2 more bytes compared to master
 
 		public enum Feature
 		{
@@ -28,7 +28,6 @@ namespace BBSFW.Model
 			MotorTemperatureSensor
 		}
 
-		
 		public static int GetByteSize(int version)
 		{
 			switch (version)
@@ -109,7 +108,6 @@ namespace BBSFW.Model
 			BrakeLight = 3
 		}
 
-
 		public class AssistLevel
 		{
 			[XmlAttribute]
@@ -130,7 +128,6 @@ namespace BBSFW.Model
 			[XmlAttribute]
 			public float TorqueAmplificationFactor;
 		}
-
 
 		[XmlIgnore]
 		public BbsfwConnection.Controller Target { get; private set; }
@@ -207,7 +204,6 @@ namespace BBSFW.Model
 
 		public AssistLevel[] StandardAssistLevels = new AssistLevel[10];
 		public AssistLevel[] SportAssistLevels = new AssistLevel[10];
-
 
 		public Configuration() : this(BbsfwConnection.Controller.Unknown)
 		{ }
@@ -585,7 +581,6 @@ namespace BBSFW.Model
 			return true;
 		}
 
-
 		public byte[] WriteToBuffer()
 		{
 			using (var s = new MemoryStream())
@@ -777,7 +772,6 @@ namespace BBSFW.Model
 				ValidateLimits((uint)SportAssistLevels[i].TorqueAmplificationFactor, 0, 25, $"Sport (Level {i}): Torque Amplification");
 			}
 		}
-
 
 		private void ValidateLimits(uint value, uint min, uint max, string name)
 		{
