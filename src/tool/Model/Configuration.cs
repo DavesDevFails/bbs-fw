@@ -17,7 +17,7 @@ namespace BBSFW.Model
 
 		public const int ByteSizeV1 = 120;
 		public const int ByteSizeV2 = 124;
-		public const int ByteSizeV3 = 151;
+		public const int ByteSizeV3 = 149;
 		public const int ByteSizeV4 = 152;
 
 		public enum Feature
@@ -78,6 +78,13 @@ namespace BBSFW.Model
 			SpeedOverride = 0x40
 		};
 
+		public enum ThrottleGlobalSpeedLimitOptions
+		{
+			Disabled = 0x00,
+			Enabled = 0x01,
+			StandardLevels = 0x02
+		}
+
 		public enum TemperatureSensor
 		{
 			Disabled = 0x00,
@@ -93,6 +100,15 @@ namespace BBSFW.Model
 			RequestedPower = 2,
 			BatteryPercent = 3
 		}
+
+		public enum LightsModeOptions
+		{
+			Default = 0,
+			Disabled = 1,
+			AlwaysOn = 2,
+			BrakeLight = 3
+		}
+
 
 		public class AssistLevel
 		{
@@ -152,13 +168,14 @@ namespace BBSFW.Model
 		public bool UseSpeedSensor;
 		public bool UseShiftSensor;
 		public bool UsePushWalk;
-
-		public bool UsePretension;
-		public uint PretensionSpeedCutoffKph;
 		public TemperatureSensor UseTemperatureSensor;
 
 		// lights
-		public bool LightsAlwaysOn;
+		public LightsModeOptions LightsMode;
+
+		// pretension
+		public bool UsePretension;
+		public uint PretensionSpeedCutoffKph;
 
 		// speed sensor
 		public float WheelSizeInch;
@@ -174,6 +191,8 @@ namespace BBSFW.Model
 		public uint ThrottleStartMillivolts;
 		public uint ThrottleEndMillivolts;
 		public uint ThrottleStartPercent;
+		public ThrottleGlobalSpeedLimitOptions ThrottleGlobalSpeedLimit;
+		public uint ThrottleGlobalSpeedLimitPercent;
 
 		// shift interrupt options
 		public uint ShiftInterruptDuration;
@@ -206,11 +225,12 @@ namespace BBSFW.Model
 			UseSpeedSensor = false;
 			UseShiftSensor = false;
 			UsePushWalk = false;
-			UsePretension = false;
-			PretensionSpeedCutoffKph = 0;
 			UseTemperatureSensor = TemperatureSensor.All;
 
-			LightsAlwaysOn = false;
+			LightsMode = LightsModeOptions.Default;
+
+			UsePretension = false;
+			PretensionSpeedCutoffKph = 0;
 
 			WheelSizeInch = 0;
 			NumWheelSensorSignals = 0;
@@ -224,6 +244,8 @@ namespace BBSFW.Model
 			ThrottleStartMillivolts = 0;
 			ThrottleEndMillivolts = 0;
 			ThrottleStartPercent = 0;
+			ThrottleGlobalSpeedLimit = ThrottleGlobalSpeedLimitOptions.Disabled;
+			ThrottleGlobalSpeedLimitPercent = 0;
 
 			ShiftInterruptDuration = 0;
 			ShiftInterruptCurrentThresholdPercent = 0;
@@ -326,12 +348,14 @@ namespace BBSFW.Model
 			WalkModeDataDisplay = WalkModeData.Speed;
 			PasKeepCurrentPercent = 100;
 			PasKeepCurrentCadenceRpm = 255;
-			UsePretension = false;
-			PretensionSpeedCutoffKph = 8;
 			UseShiftSensor = true;
 			ShiftInterruptDuration = 600;
 			ShiftInterruptCurrentThresholdPercent = 10;
-			LightsAlwaysOn = false;
+			LightsMode = LightsModeOptions.Default;
+			UsePretension = false;
+			PretensionSpeedCutoffKph = 8;
+			ThrottleGlobalSpeedLimit = ThrottleGlobalSpeedLimitOptions.Disabled;
+			ThrottleGlobalSpeedLimitPercent = 100;
 
 			return true;
 		}
@@ -365,6 +389,8 @@ namespace BBSFW.Model
 
 				PasStartDelayPulses = br.ReadByte();
 				PasStopDelayMilliseconds = br.ReadByte() * 10u;
+				PasKeepCurrentCadenceRpm = 255;
+				PasKeepCurrentPercent = 100;
 
 				ThrottleStartMillivolts = br.ReadUInt16();
 				ThrottleEndMillivolts = br.ReadUInt16();
@@ -394,15 +420,17 @@ namespace BBSFW.Model
 				}
 			}
 
-			// apply same default settings for non existing options in version
+			// apply default settings for non existing options in version
 			PasKeepCurrentPercent = 100;
 			PasKeepCurrentCadenceRpm = 255;
-			UsePretension = false;
-			PretensionSpeedCutoffKph = 8;
 			UseShiftSensor = true;
 			ShiftInterruptDuration = 600;
 			ShiftInterruptCurrentThresholdPercent = 10;
-			LightsAlwaysOn = false;
+			LightsMode = LightsModeOptions.Default;
+			UsePretension = false;
+			PretensionSpeedCutoffKph = 8;
+			ThrottleGlobalSpeedLimit = ThrottleGlobalSpeedLimitOptions.Disabled;
+			ThrottleGlobalSpeedLimitPercent = 100;
 
 			return true;
 		}
@@ -474,8 +502,10 @@ namespace BBSFW.Model
 				}
 			}
 
-			// apply same default settings for non existing options in version
-			LightsAlwaysOn = false;
+			// apply default settings for non existing options in version
+			LightsMode = LightsModeOptions.Default;
+			ThrottleGlobalSpeedLimit = ThrottleGlobalSpeedLimitOptions.Disabled;
+			ThrottleGlobalSpeedLimitPercent = 100;
 
 			return true;
 		}
@@ -504,7 +534,10 @@ namespace BBSFW.Model
 				UsePushWalk = br.ReadBoolean();
 				UseTemperatureSensor = (TemperatureSensor)br.ReadByte();
 
-				LightsAlwaysOn = br.ReadBoolean();
+				LightsMode = (LightsModeOptions)br.ReadByte();
+
+				UsePretension = br.ReadBoolean();
+				PretensionSpeedCutoffKph = br.ReadByte();
 
 				WheelSizeInch = br.ReadUInt16() / 10f;
 				NumWheelSensorSignals = br.ReadByte();
@@ -517,6 +550,8 @@ namespace BBSFW.Model
 				ThrottleStartMillivolts = br.ReadUInt16();
 				ThrottleEndMillivolts = br.ReadUInt16();
 				ThrottleStartPercent = br.ReadByte();
+				ThrottleGlobalSpeedLimit = (ThrottleGlobalSpeedLimitOptions)br.ReadByte();
+				ThrottleGlobalSpeedLimitPercent = br.ReadByte();
 
 				ShiftInterruptDuration = br.ReadUInt16();
 				ShiftInterruptCurrentThresholdPercent = br.ReadByte();
@@ -550,6 +585,7 @@ namespace BBSFW.Model
 			return true;
 		}
 
+
 		public byte[] WriteToBuffer()
 		{
 			using (var s = new MemoryStream())
@@ -567,11 +603,12 @@ namespace BBSFW.Model
 				bw.Write(UseSpeedSensor);
 				bw.Write(UseShiftSensor);
 				bw.Write(UsePushWalk);
-				bw.Write(UsePretension);
-				bw.Write((byte)PretensionSpeedCutoffKph);
 				bw.Write((byte)UseTemperatureSensor);
 
-				bw.Write(LightsAlwaysOn);
+				bw.Write((byte)LightsMode);
+
+				bw.Write(UsePretension);
+				bw.Write((byte)PretensionSpeedCutoffKph);
 
 				bw.Write((UInt16)(WheelSizeInch * 10));
 				bw.Write((byte)NumWheelSensorSignals);
@@ -584,6 +621,8 @@ namespace BBSFW.Model
 				bw.Write((UInt16)ThrottleStartMillivolts);
 				bw.Write((UInt16)ThrottleEndMillivolts);
 				bw.Write((byte)ThrottleStartPercent);
+				bw.Write((byte)ThrottleGlobalSpeedLimit);
+				bw.Write((byte)ThrottleGlobalSpeedLimitPercent);
 
 				bw.Write((UInt16)ShiftInterruptDuration);
 				bw.Write((byte)ShiftInterruptCurrentThresholdPercent);
@@ -629,10 +668,10 @@ namespace BBSFW.Model
 			UseSpeedSensor = cfg.UseSpeedSensor;
 			UseShiftSensor = cfg.UseShiftSensor;
 			UsePushWalk = cfg.UsePushWalk;
+			UseTemperatureSensor = cfg.UseTemperatureSensor;
+			LightsMode = cfg.LightsMode;
 			UsePretension = cfg.UsePretension;
 			PretensionSpeedCutoffKph = cfg.PretensionSpeedCutoffKph;
-			UseTemperatureSensor = cfg.UseTemperatureSensor;
-			LightsAlwaysOn = cfg.LightsAlwaysOn;
 			WheelSizeInch = cfg.WheelSizeInch;
 			NumWheelSensorSignals = cfg.NumWheelSensorSignals;
 			MaxSpeedKph = cfg.MaxSpeedKph;
@@ -643,6 +682,8 @@ namespace BBSFW.Model
 			ThrottleStartMillivolts = cfg.ThrottleStartMillivolts;
 			ThrottleEndMillivolts = cfg.ThrottleEndMillivolts;
 			ThrottleStartPercent = cfg.ThrottleStartPercent;
+			ThrottleGlobalSpeedLimit = cfg.ThrottleGlobalSpeedLimit;
+			ThrottleGlobalSpeedLimitPercent = cfg.ThrottleGlobalSpeedLimitPercent;
 			ShiftInterruptDuration = cfg.ShiftInterruptDuration;
 			ShiftInterruptCurrentThresholdPercent = cfg.ShiftInterruptCurrentThresholdPercent;
 			WalkModeDataDisplay = cfg.WalkModeDataDisplay;
@@ -700,7 +741,7 @@ namespace BBSFW.Model
 
 			ValidateLimits((uint)WheelSizeInch, 10, 40, "Wheel Size (inch)");
 			ValidateLimits(NumWheelSensorSignals, 1, 10, "Wheel Sensor Signals");
-			ValidateLimits(MaxSpeedKph, 0, 100, "Max Speed (km/h)");
+			ValidateLimits(MaxSpeedKph, 0, 180, "Max Speed (km/h)");
 			ValidateLimits(PretensionSpeedCutoffKph, 0, 100, "Pretension Speed Cutoff (km/h)");
 
 			ValidateLimits(PasStartDelayPulses, 0, 24, "Pas Delay (pulses)");
@@ -711,6 +752,7 @@ namespace BBSFW.Model
 			ValidateLimits(ThrottleStartMillivolts, 200, 2500, "Throttle Start (mV)");
 			ValidateLimits(ThrottleEndMillivolts, 2500, 5000, "Throttle End (mV)");
 			ValidateLimits(ThrottleStartPercent, 0, 100, "Throttle Start (%)");
+			ValidateLimits(ThrottleGlobalSpeedLimitPercent, 0, 100, "Throttle Global Speed Limit (%)");
 
 			ValidateLimits(ShiftInterruptDuration, 50, 2000, "Shift Interrupt Duration (ms)");
 			ValidateLimits(ShiftInterruptCurrentThresholdPercent, 0, 100, "Shift Interrupt Current Threshold (%)");
