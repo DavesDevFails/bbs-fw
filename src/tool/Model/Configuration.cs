@@ -349,7 +349,7 @@ namespace BBSFW.Model
 			ShiftInterruptCurrentThresholdPercent = 10;
 			LightsMode = LightsModeOptions.Default;
 			UsePretension = false;
-			PretensionSpeedCutoffKph = 8;
+			PretensionSpeedCutoffKph = 16;
 			ThrottleGlobalSpeedLimit = ThrottleGlobalSpeedLimitOptions.Disabled;
 			ThrottleGlobalSpeedLimitPercent = 100;
 
@@ -424,7 +424,7 @@ namespace BBSFW.Model
 			ShiftInterruptCurrentThresholdPercent = 10;
 			LightsMode = LightsModeOptions.Default;
 			UsePretension = false;
-			PretensionSpeedCutoffKph = 8;
+			PretensionSpeedCutoffKph = 16;
 			ThrottleGlobalSpeedLimit = ThrottleGlobalSpeedLimitOptions.Disabled;
 			ThrottleGlobalSpeedLimitPercent = 100;
 
