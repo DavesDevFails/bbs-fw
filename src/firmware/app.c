@@ -64,6 +64,8 @@ static int8_t temperature_motor_c;
 static uint16_t ramp_up_current_interval_ms;
 static uint32_t power_blocked_until_ms;
 
+static uint16_t pretension_cutoff_speed_rpm_x10;
+
 void apply_pas_cadence(uint8_t* target_current, uint8_t throttle_percent);
 #if HAS_TORQUE_SENSOR
 void apply_pas_torque(uint8_t* target_current);
@@ -110,6 +112,8 @@ void app_init()
 	power_blocked_until_ms = 0;
 
 	speed_limit_ramp_interval_rpm_x10 = convert_wheel_speed_kph_to_rpm(SPEED_LIMIT_RAMP_DOWN_INTERVAL_KPH) * 10;
+
+	pretension_cutoff_speed_rpm_x10 = convert_wheel_speed_kph_to_rpm(g_config.pretension_speed_cutoff_kph) * 10;
 
 	cruise_paused = true;
 	operation_mode = OPERATION_MODE_DEFAULT;
@@ -352,8 +356,7 @@ uint8_t app_get_temperature()
 
 void apply_pretension(uint8_t* target_current)
 {
-	int16_t current_speed_rpm_x10 = speed_sensor_get_rpm_x10();
-	static int16_t pretension_cutoff_speed_rpm_x10 = convert_wheel_speed_kph_to_rpm(g_config.pretension_speed_cutoff_kph) * 10;
+	uint16_t current_speed_rpm_x10 = speed_sensor_get_rpm_x10();
 
 	if (g_config.use_speed_sensor && g_config.use_pretension && current_speed_rpm_x10 > pretension_cutoff_speed_rpm_x10)
 	{
