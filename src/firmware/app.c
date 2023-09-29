@@ -348,7 +348,7 @@ void apply_pretension(uint8_t* target_current)
 {
 	uint16_t current_speed_rpm_x10 = speed_sensor_get_rpm_x10();
 
-	if (g_config.use_speed_sensor && g_config.use_pretension && current_speed_rpm_x10 > pretension_cutoff_speed_rpm_x10)
+	if (g_config.use_speed_sensor && g_config.use_pretension && current_speed_rpm_x10 > pretension_cutoff_speed_rpm_x10 && operation_mode == OPERATION_MODE_SPORT)
 	{
 		*target_current = 1;
 	}
