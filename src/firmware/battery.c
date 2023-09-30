@@ -22,7 +22,7 @@ static bool first_reading_done;
 
 #define BATTERY_NO_LOAD_DELAY_MS		2000
 
-#define BATTERY_FULL_OFFSET_PERCENT		8
+#define BATTERY_FULL_OFFSET_PERCENT		1
 #define BATTERY_EMPTY_OFFSET_PERCENT	8
 
 //
