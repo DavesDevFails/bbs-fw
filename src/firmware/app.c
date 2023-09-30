@@ -626,7 +626,7 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 			else
 			{
 				// linear ramp down when approaching max speed.
-				uint8_t tmp = (uint8_t)MAP32(current_speed_rpm_x10, max_speed_ramp_low_rpm_x10, max_speed_ramp_high_rpm_x10, *target_current, 1);
+				uint8_t tmp = (uint8_t)MAP32(current_speed_rpm_x10, max_speed_ramp_low_rpm_x10, max_speed_rpm_x10, *target_current, 0);
 				if (*target_current > tmp)
 				{
 					*target_current = tmp;
