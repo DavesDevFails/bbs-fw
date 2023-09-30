@@ -89,7 +89,7 @@
 // If max speed is 50 and this is set to 3 then the
 // target current will start ramping down when passing 47
 // and be at 50% of assist target current when reaching 50.
-#define SPEED_LIMIT_RAMP_DOWN_INTERVAL_KPH		3
+#define SPEED_LIMIT_RAMP_DOWN_INTERVAL_KPH		5
 
 // Current ramp down (e.g. when releasing throttle, stop pedaling etc.) in percent per 10 millisecond.
 // Specifying 1 will make ramp down periond 1 second if relasing from full throttle.
