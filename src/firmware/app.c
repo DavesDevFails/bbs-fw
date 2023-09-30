@@ -168,7 +168,10 @@ void app_process()
 	
 	apply_current_ramp_up(&target_current, is_limiting || !throttle_override);
 	apply_current_ramp_down(&target_current, !is_braking && !shift_limiting);
-
+	if (speed_limiting)
+	{
+		target_cadence = 15
+	}
 	motor_set_target_speed(target_cadence);
 	motor_set_target_current(target_current);
 
