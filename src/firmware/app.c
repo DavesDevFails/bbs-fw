@@ -481,9 +481,22 @@ void apply_cruise(uint8_t* target_current, uint8_t throttle_percent)
 		}
 		else
 		{
-			if (assist_level_data.level.target_current_percent > *target_current)
+			// if (assist_level_data.level.target_current_percent > *target_current)
+			// {
+			// 	*target_current = assist_level_data.level.target_current_percent;
+			// }
+			
+			int32_t max_speed_ramp_low_rpm_x10 = assist_level_data.max_wheel_speed_rpm_x10 - speed_limit_ramp_interval_rpm_x10;
+			int32_t max_speed_ramp_high_rpm_x10 = assist_level_data.max_wheel_speed_rpm_x10 + speed_limit_ramp_interval_rpm_x10;
+			int32_t current_speed_rpm_x10 = speed_sensor_get_rpm_x10();
+			int32_t cruise_delta = assist_level_data.max_wheel_speed_rpm_x10 - current_speed_rpm_x10
+
+			// linear ramp of power depending on current speed compared with cruise speed.
+			uint8_t tmp = (uint8_t)MAP32(cruise_delta, 0, assist_level_data.max_wheel_speed_rpm_x10, 1, assist_level_data.level.target_current_percent);
+			if (tmp > *target_current)
 			{
-				*target_current = assist_level_data.level.target_current_percent;
+				*target_current = tmp;
+				// return true;
 			}
 		}
 	}
