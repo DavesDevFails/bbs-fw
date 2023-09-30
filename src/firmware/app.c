@@ -170,7 +170,7 @@ void app_process()
 	apply_current_ramp_down(&target_current, !is_braking && !shift_limiting);
 	if (speed_limiting)
 	{
-		target_cadence = 15
+		target_cadence = 15;
 	}
 	motor_set_target_speed(target_cadence);
 	motor_set_target_current(target_current);
@@ -483,7 +483,7 @@ void apply_cruise(uint8_t* target_current, uint8_t throttle_percent)
 			if (assist_level_data.max_wheel_speed_rpm_x10 == ((int32_t)global_speed_limit_rpm * assist_level_data.level.max_speed_percent) / 10)
 			{
 				// Set cruise control speed to current speed
-				assist_level_data.max_wheel_speed_rpm_x10 = speed_sensor_get_rpm_x10()
+				assist_level_data.max_wheel_speed_rpm_x10 = speed_sensor_get_rpm_x10();
 			}
 
 		}
@@ -506,7 +506,7 @@ void apply_cruise(uint8_t* target_current, uint8_t throttle_percent)
 			// }
 
 			int32_t current_speed_rpm_x10 = speed_sensor_get_rpm_x10();
-			int32_t cruise_delta = assist_level_data.max_wheel_speed_rpm_x10 - current_speed_rpm_x10
+			int32_t cruise_delta = assist_level_data.max_wheel_speed_rpm_x10 - current_speed_rpm_x10;
 
 			// linear ramp of power depending on current speed compared with cruise speed.
 			uint8_t tmp = (uint8_t)MAP32(cruise_delta, 0, assist_level_data.max_wheel_speed_rpm_x10, 1, assist_level_data.level.target_current_percent);
