@@ -476,6 +476,13 @@ void apply_cruise(uint8_t* target_current, uint8_t throttle_percent)
 		{
 			cruise_paused = false;
 			cruise_block_throttle_return = true;
+			// If cruise control speed has not been set
+			if (assist_level_data.max_wheel_speed_rpm_x10 == ((int32_t)global_speed_limit_rpm * assist_level_data.level.max_speed_percent) / 10)
+			{
+				// Set cruise control speed to current speed
+				assist_level_data.max_wheel_speed_rpm_x10 = speed_sensor_get_rpm_x10()
+			}
+
 		}
 
 		// reset flag tracking throttle to make sure throttle returns to idle position before engage/disenage cruise with throttle touch
@@ -490,9 +497,20 @@ void apply_cruise(uint8_t* target_current, uint8_t throttle_percent)
 		}
 		else
 		{
-			if (assist_level_data.level.target_current_percent > *target_current)
+			// if (assist_level_data.level.target_current_percent > *target_current)
+			// {
+			// 	*target_current = assist_level_data.level.target_current_percent;
+			// }
+
+			int32_t current_speed_rpm_x10 = speed_sensor_get_rpm_x10();
+			int32_t cruise_delta = assist_level_data.max_wheel_speed_rpm_x10 - current_speed_rpm_x10
+
+			// linear ramp of power depending on current speed compared with cruise speed.
+			uint8_t tmp = (uint8_t)MAP32(cruise_delta, 0, assist_level_data.max_wheel_speed_rpm_x10, 1, assist_level_data.level.target_current_percent);
+			if (tmp > *target_current)
 			{
-				*target_current = assist_level_data.level.target_current_percent;
+				*target_current = tmp;
+				// return true;
 			}
 		}
 	}
@@ -548,8 +566,16 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 	int32_t max_speed_rpm_x10;
 	if (global_throttle_limit_active)
 	{
-		// use configured global throttle override speed limit
-		max_speed_rpm_x10 = global_throttle_speed_limit_rpm_x10;
+		if (pas_is_pedaling_forwards())
+		{
+			// normal operation, use configured assist level speed limit
+			max_speed_rpm_x10 = assist_level_data.max_wheel_speed_rpm_x10;
+		}
+		else 
+		{
+			// use configured global throttle override speed limit
+			max_speed_rpm_x10 = global_throttle_speed_limit_rpm_x10;
+		}
 	}
 	else if (throttle_speed_override_active)
 	{
