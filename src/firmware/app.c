@@ -459,6 +459,14 @@ void apply_cruise(uint8_t* target_current, uint8_t throttle_percent)
 		{
 			cruise_paused = false;
 			cruise_block_throttle_return = true;
+
+			// Check if Cruise Speed hasn't already been set
+			if (assist_level_data.max_wheel_speed_rpm_x10 == ((int32_t)global_speed_limit_rpm * assist_level_data.level.max_speed_percent) / 10)
+			{
+				// Set cruise speed
+				assist_level_data.max_wheel_speed_rpm_x10 = speed_sensor_get_rpm_x10();
+			}
+			
 		}
 
 		// reset flag tracking throttle to make sure throttle returns to idle position before engage/disenage cruise with throttle touch
