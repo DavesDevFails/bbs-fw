@@ -601,7 +601,7 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 
 		if (current_speed_rpm_x10 < max_speed_ramp_low_rpm_x10)
 		{
-			// no limiting
+			// no limiting needed
 			if (speed_limiting)
 			{
 				speed_limiting = false;
@@ -610,17 +610,18 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 		}		
 		else
 		{
+			// should be speed limiting
 			if (!speed_limiting)
 			{
 				speed_limiting = true;
 				eventlog_write_data(EVT_DATA_SPEED_LIMITING, 1);
 			}
-
-			if (current_speed_rpm_x10 > max_speed_ramp_high_rpm_x10)
+			// overspeed - switch off motor completely
+			if (current_speed_rpm_x10 > max_speed_rpm_x10)
 			{
-				if (*target_current > 1)
+				if (*target_current > 0)
 				{
-					*target_current = 1;
+					*target_current = 0;
 					return true;
 				}
 			}
