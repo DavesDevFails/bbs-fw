@@ -613,7 +613,8 @@ static int16_t process_bafang_display_read_speed()
 			data = motor_get_target_current();
 			break;
 		case WALK_MODE_DATA_BATTERY_PERCENT:
-			data = battery_get_percent();
+			// data = battery_get_percent();
+			data = motor_get_battery_voltage_x10() / 10;
 			break;
 		}
 

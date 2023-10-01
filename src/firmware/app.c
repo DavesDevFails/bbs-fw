@@ -232,7 +232,7 @@ void app_set_lights(bool on)
 		(assist_level == ASSIST_6 && g_config.assist_mode_select == ASSIST_MODE_SELECT_PAS6_LIGHT) ||
 		(assist_level == ASSIST_7 && g_config.assist_mode_select == ASSIST_MODE_SELECT_PAS7_LIGHT) ||
 		(assist_level == ASSIST_8 && g_config.assist_mode_select == ASSIST_MODE_SELECT_PAS8_LIGHT) ||
-		(assist_level == ASSIST_9 && g_config.assist_mode_select == ASSIST_MODE_SELECT_PAS9_LIGHT)
+		(assist_level == ASSIST_9 && g_config.assist_mode_select == ASSIST_MODE_SELECT_PAS0_LIGHT)
 	)
 	{
 		if (on)
@@ -575,7 +575,7 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 	// Global throttle limit is only active in Standard mode
 	if (global_throttle_limit_active)
 	{
-		if (pas_is_pedaling_forwards())
+		if (pas_is_pedaling_forwards() && pas_get_pulse_counter() > g_config.pas_start_delay_pulses)
 		{
 			// pedals are moving - use configured STANDARD assist level speed limits (25 kph for all PAS levels)
 			max_speed_rpm_x10 = assist_level_data.max_wheel_speed_rpm_x10;
@@ -622,7 +622,7 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 				eventlog_write_data(EVT_DATA_SPEED_LIMITING, 1);
 			}
 			// overspeed - switch off motor completely
-			if (current_speed_rpm_x10 > max_speed_rpm_x10)
+			if (current_speed_rpm_x10 > max_speed_ramp_high_rpm_x10)
 			{
 				if (*target_current > 1)
 				{
