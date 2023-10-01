@@ -479,10 +479,11 @@ void apply_cruise(uint8_t* target_current, uint8_t throttle_percent)
 		{
 			cruise_paused = false;
 			cruise_block_throttle_return = true;
-			// If cruise control speed has not been set
+
+			// Set cruise control speed to current speed if cruise control speed has not been set previously
 			if (assist_level_data.max_wheel_speed_rpm_x10 == ((int32_t)global_speed_limit_rpm * assist_level_data.level.max_speed_percent) / 10)
 			{
-				// Set cruise control speed to current speed
+				
 				assist_level_data.max_wheel_speed_rpm_x10 = speed_sensor_get_rpm_x10();
 			}
 
@@ -506,7 +507,7 @@ void apply_cruise(uint8_t* target_current, uint8_t throttle_percent)
 			// }
 
 			int32_t current_speed_rpm_x10 = speed_sensor_get_rpm_x10();
-			int32_t cruise_delta = assist_level_data.max_wheel_speed_rpm_x10 - current_speed_rpm_x10;
+			int32_t cruise_delta = CLAMP(assist_level_data.max_wheel_speed_rpm_x10 - current_speed_rpm_x10, 0, assist_level_data.max_wheel_speed_rpm_x10);
 
 			// linear ramp of power depending on current speed compared with cruise speed.
 			uint8_t tmp = (uint8_t)MAP32(cruise_delta, 0, assist_level_data.max_wheel_speed_rpm_x10, 1, assist_level_data.level.target_current_percent);
@@ -619,16 +620,16 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 			// overspeed - switch off motor completely
 			if (current_speed_rpm_x10 > max_speed_rpm_x10)
 			{
-				if (*target_current > 0)
+				if (*target_current > 1)
 				{
-					*target_current = 0;
+					*target_current = 1;
 					return true;
 				}
 			}
 			else
 			{
 				// linear ramp down when approaching max speed :)
-				uint8_t tmp = (uint8_t)MAP32(current_speed_rpm_x10, max_speed_ramp_low_rpm_x10, max_speed_rpm_x10, *target_current, 0);
+				uint8_t tmp = (uint8_t)MAP32(current_speed_rpm_x10, max_speed_ramp_low_rpm_x10, max_speed_ramp_high_rpm_x10, *target_current, 1);
 				if (*target_current > tmp)
 				{
 					*target_current = tmp;
