@@ -168,7 +168,7 @@ void app_process()
 	
 	apply_current_ramp_up(&target_current, is_limiting || !throttle_override);
 	apply_current_ramp_down(&target_current, !is_braking && !shift_limiting);
-	if (speed_limiting || target_current == 1)
+	if (speed_limiting || shift_limiting || target_current == 1)
 	{
 		target_cadence = 15;
 	}
