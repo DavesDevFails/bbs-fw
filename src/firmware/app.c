@@ -165,13 +165,17 @@ void app_process()
 #endif
 	bool is_limiting = speed_limiting || thermal_limiting || lvc_limiting || shift_limiting;
 	bool is_braking = apply_brake(&target_current);
+	// bool requesting_power = throttle_percent > 0 || (pas_is_pedaling_forwards() && pas_get_pulse_counter() > g_config.pas_start_delay_pulses);
 	
 	apply_current_ramp_up(&target_current, is_limiting || !throttle_override);
 	apply_current_ramp_down(&target_current, !is_braking && !shift_limiting);
-	if (speed_limiting || shift_limiting || target_current == 1)
-	{
-		target_cadence = 15;
-	}
+
+	// Limit target cadance (motor rpm) if limiting or pre-tensioning only - Use normal assist level limit if pedalling or using throttle
+	// if ((speed_limiting || shift_limiting || target_current == 1) && !requesting_power)
+	// {
+	// 	target_cadence = 40;
+	// }
+
 	motor_set_target_speed(target_cadence);
 	motor_set_target_current(target_current);
 
@@ -351,7 +355,7 @@ void apply_pretension(uint8_t* target_current)
 {
 	uint16_t current_speed_rpm_x10 = speed_sensor_get_rpm_x10();
 
-	if (g_config.use_speed_sensor && g_config.use_pretension && current_speed_rpm_x10 > pretension_cutoff_speed_rpm_x10 && operation_mode == OPERATION_MODE_SPORT)
+	if (g_config.use_speed_sensor && g_config.use_pretension && current_speed_rpm_x10 > pretension_cutoff_speed_rpm_x10 && operation_mode == OPERATION_MODE_SPORT && assist_level != ASSIST_0)
 	{
 		*target_current = 1;
 	}
