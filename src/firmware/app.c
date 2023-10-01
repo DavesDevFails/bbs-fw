@@ -567,16 +567,17 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 		(assist_level_data.level.flags & ASSIST_FLAG_OVERRIDE_SPEED);
 
 	int32_t max_speed_rpm_x10;
+	// Global throttle limit is only active in Standard mode
 	if (global_throttle_limit_active)
 	{
 		if (pas_is_pedaling_forwards())
 		{
-			// normal operation, use configured assist level speed limit
+			// pedals are moving - use configured STANDARD assist level speed limits (25 kph for all PAS levels)
 			max_speed_rpm_x10 = assist_level_data.max_wheel_speed_rpm_x10;
 		}
 		else 
 		{
-			// use configured global throttle override speed limit
+			// throttle only, no pedalling - use configured global throttle override speed limit (6 kph limit )
 			max_speed_rpm_x10 = global_throttle_speed_limit_rpm_x10;
 		}
 	}
