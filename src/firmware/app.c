@@ -171,10 +171,10 @@ void app_process()
 	apply_current_ramp_down(&target_current, !is_braking && !shift_limiting);
 
 	// Limit target cadance (motor rpm) if limiting or pre-tensioning only - Use normal assist level limit if pedalling or using throttle
-	// if ((speed_limiting || shift_limiting || target_current == 1) && !requesting_power)
-	// {
-	// 	target_cadence = 40;
-	// }
+	if ((speed_limiting || shift_limiting) && operation_mode == OPERATION_MODE_DEFAULT )
+	{
+		target_cadence = 20;
+	}
 
 	motor_set_target_speed(target_cadence);
 	motor_set_target_current(target_current);
