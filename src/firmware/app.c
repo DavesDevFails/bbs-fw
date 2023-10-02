@@ -173,7 +173,7 @@ void app_process()
 	// Limit target cadance (motor rpm) if limiting or pre-tensioning only - Use normal assist level limit if pedalling or using throttle
 	if ((speed_limiting || shift_limiting) && operation_mode == OPERATION_MODE_DEFAULT )
 	{
-		target_cadence = 20;
+		target_cadence = target_cadence/3;
 	}
 
 	motor_set_target_speed(target_cadence);
