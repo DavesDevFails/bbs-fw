@@ -479,7 +479,7 @@ void apply_cruise(uint8_t* target_current, uint8_t throttle_percent)
 		}
 
 		// unpause cruise if pedaling forward while engaging throttle > 50%
-		else if (cruise_paused && !cruise_block_throttle_return && throttle_percent > 50 && pas_is_pedaling_forwards() && pas_get_pulse_counter() > CRUISE_ENGAGE_PAS_PULSES)
+		else if (cruise_paused && !cruise_block_throttle_return && throttle_percent > 20 && pas_is_pedaling_forwards() && pas_get_pulse_counter() > CRUISE_ENGAGE_PAS_PULSES)
 		{
 			cruise_paused = false;
 			cruise_block_throttle_return = true;
