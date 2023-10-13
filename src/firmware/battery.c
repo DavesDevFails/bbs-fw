@@ -88,7 +88,7 @@ static uint8_t map_percent_sw102(uint8_t percent)
 
 void battery_init()
 {
-	// default to 70% until first reading is available.
+	// default to 70% until first reading is available
 	battery_percent = 70;
 	motor_disabled_at_ms = 0;
 	first_reading_done = false;
