@@ -122,26 +122,24 @@ void battery_process()
 	}
 	else
 	{
-		// uint8_t target_current = motor_get_target_current();
+		uint8_t target_current = motor_get_target_current();
 
-		// if (motor_disabled_at_ms == 0 && target_current == 0)
-		// {
-		// 	motor_disabled_at_ms = system_ms();
-		// }
-		// else if (target_current > 0)
-		// {
-		// 	motor_disabled_at_ms = 0;
-		// }
+		if (motor_disabled_at_ms == 0 && target_current == 0)
+		{
+			motor_disabled_at_ms = system_ms();
+		}
+		else if (target_current > 0)
+		{
+			motor_disabled_at_ms = 0;
+		}
 
-		// if (target_current == 0 && (system_ms() - motor_disabled_at_ms) > BATTERY_NO_LOAD_DELAY_MS)
-		// {
-		// 	// Compute battery percent using linear interpolation between lvc
-		// 	// and configured max voltage while under no load.
+		if (target_current == 0 && (system_ms() - motor_disabled_at_ms) > BATTERY_NO_LOAD_DELAY_MS)
+		{
+			// Compute battery percent using linear interpolation between lvc
+			// and configured max voltage while under no load.
 
-		// 	battery_percent = compute_battery_percent();
-		// }
-		// Always compute battery percent, regardless of load (useful to see voltage sag on battery)
-		battery_percent = compute_battery_percent();
+			battery_percent = compute_battery_percent();
+		}
 	}
 }
 

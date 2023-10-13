@@ -170,7 +170,7 @@ void app_process()
 	apply_current_ramp_up(&target_current, is_limiting || !throttle_override);
 	apply_current_ramp_down(&target_current, !is_braking && !shift_limiting);
 
-	// Limit target cadance (motor rpm) if limiting or pre-tensioning only - Use normal assist level limit if pedalling or using throttle
+	// Limit target cadance (motor rpm) if limiting
 	if ((speed_limiting || shift_limiting) && operation_mode == OPERATION_MODE_DEFAULT )
 	{
 		target_cadence = target_cadence/3;
@@ -487,7 +487,6 @@ void apply_cruise(uint8_t* target_current, uint8_t throttle_percent)
 			// Set cruise control speed to current speed if cruise control speed has not been set previously
 			if (assist_level_data.max_wheel_speed_rpm_x10 == ((int32_t)global_speed_limit_rpm * assist_level_data.level.max_speed_percent) / 10)
 			{
-				
 				assist_level_data.max_wheel_speed_rpm_x10 = speed_sensor_get_rpm_x10();
 			}
 
