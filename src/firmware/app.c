@@ -168,7 +168,7 @@ void app_process()
 	// bool requesting_power = throttle_percent > 0 || (pas_is_pedaling_forwards() && pas_get_pulse_counter() > g_config.pas_start_delay_pulses);
 	
 	apply_current_ramp_up(&target_current, is_limiting || !throttle_override);
-	apply_current_ramp_down(&target_current, !is_braking && !shift_limiting);
+	apply_current_ramp_down(&target_current, !is_braking && !shift_limiting && !throttle_override);
 
 	// Limit target cadance (motor rpm) if limiting
 	if ((speed_limiting || shift_limiting) && operation_mode == OPERATION_MODE_DEFAULT )
@@ -232,12 +232,17 @@ void app_set_lights(bool on)
 		(assist_level == ASSIST_6 && g_config.assist_mode_select == ASSIST_MODE_SELECT_PAS6_LIGHT) ||
 		(assist_level == ASSIST_7 && g_config.assist_mode_select == ASSIST_MODE_SELECT_PAS7_LIGHT) ||
 		(assist_level == ASSIST_8 && g_config.assist_mode_select == ASSIST_MODE_SELECT_PAS8_LIGHT) ||
+		(assist_level == ASSIST_9 && g_config.assist_mode_select == ASSIST_MODE_SELECT_PAS9_LIGHT) ||
 		(assist_level == ASSIST_9 && g_config.assist_mode_select == ASSIST_MODE_SELECT_PAS0_LIGHT)
 	)
 	{
 		if (on)
 		{
-			app_set_operation_mode(OPERATION_MODE_SPORT);
+			// Switch to sport mode ONLY if brake is activated during lights on in configured PAS mode.
+			if (brake_is_activated())
+			{
+				app_set_operation_mode(OPERATION_MODE_SPORT);
+			}
 		}
 		else
 		{
@@ -621,7 +626,7 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 				eventlog_write_data(EVT_DATA_SPEED_LIMITING, 1);
 			}
 			// overspeed - switch off motor completely
-			if (current_speed_rpm_x10 > max_speed_ramp_high_rpm_x10)
+			if (current_speed_rpm_x10 > max_speed_rpm_x10)
 			{
 				if (*target_current > 1)
 				{
@@ -632,7 +637,7 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 			else
 			{
 				// linear ramp down when approaching max speed :)
-				uint8_t tmp = (uint8_t)MAP32(current_speed_rpm_x10, max_speed_ramp_low_rpm_x10, max_speed_ramp_high_rpm_x10, *target_current, 1);
+				uint8_t tmp = (uint8_t)MAP32(current_speed_rpm_x10, max_speed_ramp_low_rpm_x10, max_speed_rpm_x10, *target_current, 1);
 				if (*target_current > tmp)
 				{
 					*target_current = tmp;
