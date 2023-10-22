@@ -168,12 +168,12 @@ void app_process()
 	// bool requesting_power = throttle_percent > 0 || (pas_is_pedaling_forwards() && pas_get_pulse_counter() > g_config.pas_start_delay_pulses);
 	
 	apply_current_ramp_up(&target_current, is_limiting || !throttle_override);
-	apply_current_ramp_down(&target_current, !is_braking && !shift_limiting && !throttle_override);
+	apply_current_ramp_down(&target_current, !is_braking && !shift_limiting);
 
-	// Limit target cadance (motor rpm) if limiting
+	// Limit target cadance (motor rpm) if speed / shift limiting (in standard mode) - helps with speed limiting
 	if ((speed_limiting || shift_limiting) && operation_mode == OPERATION_MODE_DEFAULT )
 	{
-		target_cadence = target_cadence/3;
+		target_cadence = target_cadence/2;
 	}
 
 	motor_set_target_speed(target_cadence);
@@ -626,7 +626,7 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 				eventlog_write_data(EVT_DATA_SPEED_LIMITING, 1);
 			}
 			// overspeed - switch off motor completely
-			if (current_speed_rpm_x10 > max_speed_rpm_x10)
+			if (current_speed_rpm_x10 > max_speed_ramp_high_rpm_x10)
 			{
 				if (*target_current > 1)
 				{
