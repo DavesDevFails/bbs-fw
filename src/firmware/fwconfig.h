@@ -94,7 +94,7 @@
 // Current ramp down (e.g. when releasing throttle, stop pedaling etc.) in percent per 10 millisecond.
 // Specifying 1 will make ramp down periond 1 second if relasing from full throttle.
 // Set to 100 to disable
-#define CURRENT_RAMP_DOWN_PERCENT_10MS			100
+#define CURRENT_RAMP_DOWN_PERCENT_10MS			5
 
 // Target speed in km/h when walk mode is engaged
 #define WALK_MODE_SPEED_KPH						4

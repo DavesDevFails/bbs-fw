@@ -56,6 +56,10 @@ static uint32_t power_blocked_until_ms;
 
 static uint16_t pretension_cutoff_speed_rpm_x10;
 
+static uint16_t last_throttle_percent = 0;
+static uint8_t smoothed_target_current = 0;
+
+
 void apply_pas_cadence(uint8_t* target_current, uint8_t throttle_percent);
 #if HAS_TORQUE_SENSOR
 void apply_pas_torque(uint8_t* target_current);
@@ -168,7 +172,7 @@ void app_process()
 	// bool requesting_power = throttle_percent > 0 || (pas_is_pedaling_forwards() && pas_get_pulse_counter() > g_config.pas_start_delay_pulses);
 	
 	apply_current_ramp_up(&target_current, is_limiting || !throttle_override);
-	apply_current_ramp_down(&target_current, !is_braking && !shift_limiting);
+	apply_current_ramp_down(&target_current, !is_braking && !shift_limiting && !throttle_override && last_throttle_percent < 1);
 
 	// Limit target cadance (motor rpm) if speed / shift limiting (in standard mode) - helps with speed limiting
 	if ((speed_limiting || shift_limiting) && operation_mode == OPERATION_MODE_DEFAULT )
@@ -196,6 +200,7 @@ void app_process()
 	{
 		lights_enable();
 	}
+	last_throttle_percent = throttle_percent;
 }
 
 
@@ -383,28 +388,98 @@ void apply_pas_cadence(uint8_t* target_current, uint8_t throttle_percent)
 			}
 			else
 			{
-				if (assist_level_data.level.target_current_percent > *target_current)
+				// NEW CADENCE RPM BASED MOTOR CURRENT CONTROL
+				static uint32_t time_next_calculate_cadence_power = 0;
+				if (system_ms() > time_next_calculate_cadence_power)
 				{
-					*target_current = assist_level_data.level.target_current_percent;
+					// Update time for next calculation of power output (10 per second)
+					time_next_calculate_cadence_power = system_ms() + 100;
+
+					// Define current percentage thresholds for minimum and maximum power
+					uint16_t max_power = assist_level_data.level.target_current_percent; // FULL ASSIST LEVEL POWER
+					uint16_t min_power = 1; // 1% of global max current
+
+					// Define cadence thresholds for minimum and maximum power
+					uint16_t min_cadence_rpm_x10 = 100; // 10 rpm
+					uint16_t max_cadence_rpm_x10 = 1000; // 110 rpm
+
+					// Get current road speed and pedalling cadence
+					uint16_t cadence_rpm_x10 = MIN(pas_get_cadence_rpm_x10(), max_cadence_rpm_x10);
+					uint32_t current_speed_rpm_x10 = speed_sensor_get_rpm_x10();
+
+					// if (cadence_rpm_x10 < 300)
+					// {
+					// 	// Flatter Curve
+					// 	max_cadence_rpm_x10 = 100 * 10; // 100 rpm
+					// }
+					// else 
+					// {
+					// 	// More power curve
+					// 	max_cadence_rpm_x10 = 85 * 10; // 85 rpm
+					// }
+
+					uint16_t mapped_cadence = ((cadence_rpm_x10/10) * (cadence_rpm_x10/10))/10;
+					uint16_t mapped_min_cadence = ((min_cadence_rpm_x10/10) * (min_cadence_rpm_x10/10))/10;
+					uint16_t mapped_max_cadence = ((max_cadence_rpm_x10/10) * (max_cadence_rpm_x10/10))/10;
+					
+					// Define output var for mapping calculation
+					uint8_t calculated_target_current;
+
+					// Set to max assist level power if pedalling faster than max_cadence_x10
+					if(pas_get_cadence_rpm_x10() > max_cadence_rpm_x10)
+					{
+						calculated_target_current = max_power;
+					}
+					else
+					{
+						// Linear interpolation between min and max power based on cadence
+						calculated_target_current = MAP16(
+							mapped_cadence,     	 // in
+							mapped_min_cadence,      // in_min
+							mapped_max_cadence,      // in_max
+							min_power,           	 // out_min
+							max_power            	 // out_max
+						);
+					}
+
+					calculated_target_current = CLAMP(calculated_target_current, 1, 100);
+
+					// Exponential filter application
+					smoothed_target_current = EXPONENTIAL_FILTER(smoothed_target_current, calculated_target_current, 5);
+
+					// if (smoothed_target_current > *target_current)
+					// {
+					// 	*target_current = smoothed_target_current;
+					// }
 				}
+
+				*target_current = smoothed_target_current;
+
+				// START OLD ON/OFF PAS
+				// if (assist_level_data.level.target_current_percent > *target_current)
+				// {
+				// 	*target_current = assist_level_data.level.target_current_percent;
+				// }
 
 				// apply "keep current" ramp
-				if (g_config.pas_keep_current_percent < 100)
-				{
-					if (*target_current > assist_level_data.keep_current_target_percent &&
-						pas_get_cadence_rpm_x10() > assist_level_data.keep_current_ramp_start_rpm_x10)
-					{
-						uint32_t cadence = MIN(pas_get_cadence_rpm_x10(), assist_level_data.keep_current_ramp_end_rpm_x10);
+				// if (g_config.pas_keep_current_percent < 100)
+				// {
+				// 	if (*target_current > assist_level_data.keep_current_target_percent &&
+				// 		pas_get_cadence_rpm_x10() > assist_level_data.keep_current_ramp_start_rpm_x10)
+				// 	{
+				// 		uint32_t cadence = MIN(pas_get_cadence_rpm_x10(), assist_level_data.keep_current_ramp_end_rpm_x10);
 
-						// ramp down current towards keep_current_target_percent with rpm above keep_current_ramp_start_rpm_x10
-						*target_current = MAP32(
-							cadence,	// in
-							assist_level_data.keep_current_ramp_start_rpm_x10,		// in_min
-							assist_level_data.keep_current_ramp_end_rpm_x10,		// in_max
-							*target_current,										// out_min
-							assist_level_data.keep_current_target_percent);			// out_max
-					}
-				}
+				// 		// ramp down current towards keep_current_target_percent with rpm above keep_current_ramp_start_rpm_x10
+				// 		*target_current = MAP32(
+				// 			cadence,	// in
+				// 			assist_level_data.keep_current_ramp_start_rpm_x10,		// in_min
+				// 			assist_level_data.keep_current_ramp_end_rpm_x10,		// in_max
+				// 			*target_current,										// out_min
+				// 			assist_level_data.keep_current_target_percent);			// out_max
+				// 	}
+				// }
+
+				// END OLD ON/OFF PAS (incl keep current thingy)
 			}
 		}
 	}
@@ -576,17 +651,18 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 		(assist_level_data.level.flags & ASSIST_FLAG_OVERRIDE_SPEED);
 
 	int32_t max_speed_rpm_x10;
+
 	// Global throttle limit is only active in Standard mode
 	if (global_throttle_limit_active)
 	{
 		if (pas_is_pedaling_forwards() && pas_get_pulse_counter() > g_config.pas_start_delay_pulses)
 		{
-			// pedals are moving - use configured STANDARD assist level speed limits (25 kph for all PAS levels)
+			// pedals are moving - use configured STANDARD assist level speed limits (25 kph for all STANDARD MODE PAS levels)
 			max_speed_rpm_x10 = assist_level_data.max_wheel_speed_rpm_x10;
 		}
 		else 
 		{
-			// throttle only, no pedalling - use configured global throttle override speed limit (6 kph limit )
+			// throttle only, no pedalling - use configured global throttle override speed limit (6 kph globally )
 			max_speed_rpm_x10 = global_throttle_speed_limit_rpm_x10;
 		}
 	}
@@ -602,7 +678,7 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 	}
 
 	int32_t max_speed_ramp_low_rpm_x10 = max_speed_rpm_x10 - speed_limit_ramp_interval_rpm_x10;
-	int32_t max_speed_ramp_high_rpm_x10 = max_speed_rpm_x10 + speed_limit_ramp_interval_rpm_x10;
+	int32_t max_speed_ramp_high_rpm_x10 = max_speed_rpm_x10;
 
 	if (max_speed_rpm_x10 > 0)
 	{
@@ -619,7 +695,7 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 		}		
 		else
 		{
-			// should be speed limiting
+			// yes speed limiting
 			if (!speed_limiting)
 			{
 				speed_limiting = true;
@@ -628,9 +704,19 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 			// overspeed - switch off motor completely
 			if (current_speed_rpm_x10 > max_speed_ramp_high_rpm_x10)
 			{
-				if (*target_current > 1)
+				if (*target_current > 0)
 				{
-					*target_current = 1;
+					// STANDARD / UK LEGAL MODE
+					if (operation_mode == OPERATION_MODE_DEFAULT)
+					{
+						*target_current = 0; // NO assistance after speed limit
+					}
+					// SPORT MODE
+					else 
+					{
+						*target_current = 1; // small assistance in order to better keep speed / cruise control
+					}
+					
 					return true;
 				}
 			}

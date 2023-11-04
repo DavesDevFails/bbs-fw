@@ -26,7 +26,9 @@
 
 // Low pass filter
 // value + (new_value - value) / n;
-#define EXPONENTIAL_FILTER(value, new_value, n)		(value) + ((new_value) - (value)) / (n)		
+#define EXPONENTIAL_FILTER(value, new_value, n)		(value) + ((new_value) - (value)) / (n)
+#define EXPONENTIAL_FILTER2(value, new_value, n)  (value) + ((((new_value) - (value)) * 100) / (n))/100
+
 
 #endif
 
