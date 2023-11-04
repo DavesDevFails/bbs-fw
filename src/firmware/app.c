@@ -407,17 +407,6 @@ void apply_pas_cadence(uint8_t* target_current, uint8_t throttle_percent)
 					uint16_t cadence_rpm_x10 = MIN(pas_get_cadence_rpm_x10(), max_cadence_rpm_x10);
 					uint32_t current_speed_rpm_x10 = speed_sensor_get_rpm_x10();
 
-					// if (cadence_rpm_x10 < 300)
-					// {
-					// 	// Flatter Curve
-					// 	max_cadence_rpm_x10 = 100 * 10; // 100 rpm
-					// }
-					// else 
-					// {
-					// 	// More power curve
-					// 	max_cadence_rpm_x10 = 85 * 10; // 85 rpm
-					// }
-
 					uint16_t mapped_cadence = ((cadence_rpm_x10/10) * (cadence_rpm_x10/10))/10;
 					uint16_t mapped_min_cadence = ((min_cadence_rpm_x10/10) * (min_cadence_rpm_x10/10))/10;
 					uint16_t mapped_max_cadence = ((max_cadence_rpm_x10/10) * (max_cadence_rpm_x10/10))/10;
@@ -447,39 +436,9 @@ void apply_pas_cadence(uint8_t* target_current, uint8_t throttle_percent)
 					// Exponential filter application
 					smoothed_target_current = EXPONENTIAL_FILTER(smoothed_target_current, calculated_target_current, 5);
 
-					// if (smoothed_target_current > *target_current)
-					// {
-					// 	*target_current = smoothed_target_current;
-					// }
 				}
 
 				*target_current = smoothed_target_current;
-
-				// START OLD ON/OFF PAS
-				// if (assist_level_data.level.target_current_percent > *target_current)
-				// {
-				// 	*target_current = assist_level_data.level.target_current_percent;
-				// }
-
-				// apply "keep current" ramp
-				// if (g_config.pas_keep_current_percent < 100)
-				// {
-				// 	if (*target_current > assist_level_data.keep_current_target_percent &&
-				// 		pas_get_cadence_rpm_x10() > assist_level_data.keep_current_ramp_start_rpm_x10)
-				// 	{
-				// 		uint32_t cadence = MIN(pas_get_cadence_rpm_x10(), assist_level_data.keep_current_ramp_end_rpm_x10);
-
-				// 		// ramp down current towards keep_current_target_percent with rpm above keep_current_ramp_start_rpm_x10
-				// 		*target_current = MAP32(
-				// 			cadence,	// in
-				// 			assist_level_data.keep_current_ramp_start_rpm_x10,		// in_min
-				// 			assist_level_data.keep_current_ramp_end_rpm_x10,		// in_max
-				// 			*target_current,										// out_min
-				// 			assist_level_data.keep_current_target_percent);			// out_max
-				// 	}
-				// }
-
-				// END OLD ON/OFF PAS (incl keep current thingy)
 			}
 		}
 	}
