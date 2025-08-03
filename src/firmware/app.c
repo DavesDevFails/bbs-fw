@@ -536,7 +536,7 @@ void apply_cruise(uint8_t* target_current, uint8_t throttle_percent)
 			cruise_block_throttle_return = true;
 		}
 
-		// unpause cruise if pedaling forward while engaging throttle > 50%
+		// resume cruise if pedaling forward while engaging throttle > 20%
 		else if (cruise_paused && !cruise_block_throttle_return && throttle_percent > 20 && pas_is_pedaling_forwards() && pas_get_pulse_counter() > CRUISE_ENGAGE_PAS_PULSES)
 		{
 			cruise_paused = false;
@@ -572,11 +572,12 @@ void apply_cruise(uint8_t* target_current, uint8_t throttle_percent)
 
 			// linear ramp of power depending on current speed compared with cruise speed.
 			uint8_t tmp = (uint8_t)MAP32(cruise_delta, 0, assist_level_data.max_wheel_speed_rpm_x10, 1, assist_level_data.level.target_current_percent);
-			if (tmp > *target_current)
-			{
-				*target_current = tmp;
+
+			// if (tmp > *target_current)
+			// {
+			*target_current = tmp;
 				// return true;
-			}
+			// }
 		}
 	}
 }
@@ -649,7 +650,13 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool p
 	}
 
 	int32_t max_speed_ramp_low_rpm_x10 = max_speed_rpm_x10 - speed_limit_ramp_interval_rpm_x10;
-	int32_t max_speed_ramp_high_rpm_x10 = max_speed_rpm_x10;
+	int32_t max_speed_ramp_high_rpm_x10 = max_speed_rpm_x10 + speed_limit_ramp_interval_rpm_x10;
+
+		// STANDARD / UK LEGAL MODE
+	if (operation_mode == OPERATION_MODE_DEFAULT)
+	{
+		max_speed_ramp_high_rpm_x10 = max_speed_rpm_x10;
+	}
 
 	if (max_speed_rpm_x10 > 0)
 	{
@@ -680,12 +687,12 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool p
 					// STANDARD / UK LEGAL MODE
 					if (operation_mode == OPERATION_MODE_DEFAULT)
 					{
-						*target_current = 0; // NO assistance after speed limit
+						*target_current = 0; // NO assistance after speed limit - UK LEGAL
 					}
 					// SPORT MODE
 					else 
 					{
-						*target_current = 1; // small assistance in order to better keep speed / cruise control
+						*target_current = 1; // Small assistance in order to better keep speed / cruise control
 					}
 					
 					return true;
