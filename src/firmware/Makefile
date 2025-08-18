@@ -7,7 +7,7 @@ else
 endif
 
 # Select target controller (normally done from cmd line):
-#TARGET_CONTROLLER = BBSHD
+# TARGET_CONTROLLER = BBSHD
 #TARGET_CONTROLLER = BBS02
 #TARGET_CONTROLLER = TSDZ2
 
