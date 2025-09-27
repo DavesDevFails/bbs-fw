@@ -385,7 +385,7 @@ void apply_pretension(uint8_t* target_current)
 {
 	uint16_t current_speed_rpm_x10 = speed_sensor_get_rpm_x10();
 
-	if (g_config.use_speed_sensor && g_config.use_pretension && ((current_speed_rpm_x10 > pretension_cutoff_speed_rpm_x10) || (current_speed_rpm_x10 >= (pretension_cutoff_speed_rpm_x10/2) && assist_level != ASSIST_9)) && operation_mode == OPERATION_MODE_SPORT && assist_level != ASSIST_0)
+	if (g_config.use_speed_sensor && g_config.use_pretension && ((current_speed_rpm_x10 > pretension_cutoff_speed_rpm_x10) || (current_speed_rpm_x10 >= (pretension_cutoff_speed_rpm_x10/2) && assist_level == ASSIST_9)) && operation_mode == OPERATION_MODE_SPORT && assist_level != ASSIST_0)
 	{
 		*target_current = 1;
 	}
@@ -850,7 +850,7 @@ bool apply_shift_sensor_interrupt(uint8_t* target_current)
 	static bool shift_sensor_logged = false;
 
 	// Exit immediately if shift interrupts disabled.
-	if (!g_config.use_shift_sensor)
+	if (!g_config.use_shift_sensor || operation_mode == OPERATION_MODE_SPORT && assist_level == ASSIST_9)
 	{
 		return false;
 	}
